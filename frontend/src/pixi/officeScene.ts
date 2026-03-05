@@ -33,19 +33,24 @@ const CHARACTER_SCALE = 3;
 const FLOOR_TILE_SIZE = 16;
 
 const PALETTE = {
-  backgroundTop: 0x060912,
-  backgroundBottom: 0x0b1020,
-  floorA: 0x111827,
-  floorB: 0x0f172a,
-  panelA: 0x111827,
-  panelB: 0x0f172a,
-  border: 0x2a3448,
-  text: 0xe5e7eb,
-  nexus: 0x22d3ee,
-  pivot: 0x22c55e,
-  aegis: 0xf43f5e,
-  researcher: 0xa78bfa,
-  contractor: 0xf59e0b,
+  backgroundTop: 0x1f1410,
+  backgroundBottom: 0x2b1d17,
+  floorA: 0x2e1f18,
+  floorB: 0x3a271f,
+  panelA: 0x251814,
+  panelB: 0x2d1f19,
+  border: 0x5a3b2f,
+  text: 0xf5e6d8,
+  muted: 0xc9aa92,
+  nexus: 0xf59e0b,
+  nexusBrass: 0xd97706,
+  pivot: 0x84a545,
+  pivotGold: 0xc9a227,
+  aegis: 0xe11d48,
+  aegisRed: 0xbe123c,
+  researcher: 0xb794f4,
+  researcherPaper: 0xe8d8b0,
+  contractor: 0xc47f3a,
 };
 
 const PERSISTENT_LABELS: Record<string, string> = {
@@ -67,31 +72,31 @@ const CHARACTER_SHEET_PATHS: Record<Archetype, string> = {
 
 const PERSISTENT_THEMES: Record<string, { desk: number; accent: number; chair: number }> = {
   nexus: {
-    desk: 0x1f2d3f,
-    accent: PALETTE.nexus,
-    chair: 0x1a2534,
+    desk: 0x3f2a1e,
+    accent: PALETTE.nexusBrass,
+    chair: 0x2f2119,
   },
   pivot: {
-    desk: 0x223328,
-    accent: PALETTE.pivot,
-    chair: 0x1b2a21,
+    desk: 0x3a3522,
+    accent: PALETTE.pivotGold,
+    chair: 0x2c281b,
   },
   aegis: {
-    desk: 0x35232a,
-    accent: PALETTE.aegis,
-    chair: 0x291b21,
+    desk: 0x3f2227,
+    accent: PALETTE.aegisRed,
+    chair: 0x30191f,
   },
   researcher: {
-    desk: 0x2b2541,
+    desk: 0x3a2a3d,
     accent: PALETTE.researcher,
-    chair: 0x221d33,
+    chair: 0x2d2130,
   },
 };
 
 const CONTRACTOR_THEME = {
-  desk: 0x2f313d,
+  desk: 0x3f2b20,
   accent: PALETTE.contractor,
-  chair: 0x252934,
+  chair: 0x2f221b,
 };
 
 type AgentVisual = {
@@ -223,10 +228,10 @@ export class OfficeScene {
 
     this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundTop);
 
-    for (let band = 0; band < 8; band += 1) {
-      const alpha = 0.1 + band * 0.05;
-      const y = Math.floor((heightPx / 8) * band);
-      this.addRect(0, y, widthPx, Math.ceil(heightPx / 8) + 2, PALETTE.backgroundBottom, alpha);
+    for (let band = 0; band < 9; band += 1) {
+      const alpha = 0.08 + band * 0.04;
+      const y = Math.floor((heightPx / 9) * band);
+      this.addRect(0, y, widthPx, Math.ceil(heightPx / 9) + 2, PALETTE.backgroundBottom, alpha);
     }
 
     for (let y = 0; y < floorRows; y += 1) {
@@ -235,38 +240,39 @@ export class OfficeScene {
         const px = x * FLOOR_TILE_SIZE;
         const py = y * FLOOR_TILE_SIZE;
 
-        this.addRect(px, py, FLOOR_TILE_SIZE, FLOOR_TILE_SIZE, floorColor, 0.93);
+        this.addRect(px, py, FLOOR_TILE_SIZE, FLOOR_TILE_SIZE, floorColor, 0.96);
 
         if ((x + y) % 3 === 0) {
-          this.addRect(px, py, FLOOR_TILE_SIZE, 1, PALETTE.border, 0.1);
+          this.addRect(px, py, FLOOR_TILE_SIZE, 1, PALETTE.border, 0.12);
         }
       }
     }
 
-    this.addRect(0, 0, widthPx, 16, PALETTE.panelB, 0.95);
-    this.addRect(0, heightPx - 16, widthPx, 16, PALETTE.panelB, 0.95);
-    this.addRect(0, 0, 16, heightPx, PALETTE.panelB, 0.95);
-    this.addRect(widthPx - 16, 0, 16, heightPx, PALETTE.panelB, 0.95);
-    this.addRect(16, 6, widthPx - 32, 2, PALETTE.border, 0.6);
+    this.addRect(0, 0, widthPx, 16, PALETTE.panelA, 0.96);
+    this.addRect(0, heightPx - 16, widthPx, 16, PALETTE.panelA, 0.96);
+    this.addRect(0, 0, 16, heightPx, PALETTE.panelA, 0.96);
+    this.addRect(widthPx - 16, 0, 16, heightPx, PALETTE.panelA, 0.96);
+    this.addRect(16, 6, widthPx - 32, 2, PALETTE.border, 0.68);
+    this.addRect(16, heightPx - 8, widthPx - 32, 2, PALETTE.border, 0.52);
 
-    this.drawZonePanel(1, 1, 8, 7, PALETTE.nexus);
+    this.drawZonePanel(1, 1, 8, 7, PALETTE.nexus, PALETTE.nexusBrass);
     this.drawNexusCommandCenter(1, 1, 8, 7);
 
-    this.drawZonePanel(8, 1, 8, 7, PALETTE.pivot);
+    this.drawZonePanel(8, 1, 8, 7, PALETTE.pivot, PALETTE.pivotGold);
     this.drawPivotTradingStation(8, 1, 8, 7);
 
-    this.drawZonePanel(1, 8, 8, 8, PALETTE.aegis);
+    this.drawZonePanel(1, 8, 8, 8, PALETTE.aegis, PALETTE.aegisRed);
     this.drawAegisSecurityStation(1, 8, 8, 8);
 
-    this.drawZonePanel(8, 8, 8, 8, PALETTE.researcher);
+    this.drawZonePanel(8, 8, 8, 8, PALETTE.researcher, PALETTE.researcherPaper);
     this.drawResearcherLibrary(8, 8, 8, 8);
 
-    this.drawZonePanel(17, 2, 10, 13, PALETTE.contractor);
+    this.drawZonePanel(17, 2, 10, 13, PALETTE.contractor, PALETTE.border);
     this.drawContractorWorkstations(17, 2, 10, 13);
 
     const doorY = heightPx - TILE_SIZE * 2;
-    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x1f2a3a);
-    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, PALETTE.contractor, 0.34);
+    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x3b261d);
+    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, PALETTE.contractor, 0.36);
 
     for (const [id, desk] of Object.entries(PERSISTENT_DESKS)) {
       const theme = PERSISTENT_THEMES[id] ?? PERSISTENT_THEMES.nexus;
@@ -300,20 +306,29 @@ export class OfficeScene {
     return sprite;
   }
 
-  private drawZonePanel(tileX: number, tileY: number, widthTiles: number, heightTiles: number, accent: number): void {
+  private drawZonePanel(
+    tileX: number,
+    tileY: number,
+    widthTiles: number,
+    heightTiles: number,
+    accent: number,
+    accentSecondary: number,
+  ): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
     const width = widthTiles * TILE_SIZE;
     const height = heightTiles * TILE_SIZE;
 
-    this.addRect(x, y, width, height, PALETTE.panelA, 0.72);
-    this.addRect(x + 2, y + 2, width - 4, height - 4, PALETTE.panelB, 0.68);
+    this.addRect(x, y, width, height, PALETTE.panelA, 0.78);
+    this.addRect(x + 2, y + 2, width - 4, height - 4, PALETTE.panelB, 0.72);
     this.addRect(x, y, width, 2, PALETTE.border, 0.95);
     this.addRect(x, y + height - 2, width, 2, PALETTE.border, 0.95);
     this.addRect(x, y, 2, height, PALETTE.border, 0.95);
     this.addRect(x + width - 2, y, 2, height, PALETTE.border, 0.95);
-    this.addRect(x + 6, y + 6, width - 12, 2, accent, 0.34);
-    this.addRect(x + 6, y + height - 8, width - 12, 2, accent, 0.2);
+    this.addRect(x + 6, y + 6, width - 12, 2, accent, 0.42);
+    this.addRect(x + 6, y + height - 8, width - 12, 2, accentSecondary, 0.32);
+    this.addRect(x + 6, y + 8, 2, height - 16, accentSecondary, 0.2);
+    this.addRect(x + width - 8, y + 8, 2, height - 16, accent, 0.2);
   }
 
   private drawNexusCommandCenter(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
@@ -323,45 +338,54 @@ export class OfficeScene {
     const height = heightTiles * TILE_SIZE;
 
     for (let row = 0; row < 2; row += 1) {
-      for (let col = 0; col < 3; col += 1) {
-        const sx = x + 16 + col * 44;
-        const sy = y + 18 + row * 30;
-        this.addRect(sx, sy, 36, 20, 0x0b1320);
-        this.addRect(sx + 2, sy + 2, 32, 16, PALETTE.nexus, 0.25);
-        this.addRect(sx + 4, sy + 5, 28, 2, PALETTE.nexus, 0.75);
-        this.addRect(sx + 4, sy + 10, 19, 2, PALETTE.nexus, 0.42);
-        this.addRect(sx + 4, sy + 14, 24, 1, PALETTE.nexus, 0.3);
+      for (let col = 0; col < 4; col += 1) {
+        const sx = x + 14 + col * 40;
+        const sy = y + 16 + row * 28;
+        this.addRect(sx, sy, 34, 20, 0x2a1a13);
+        this.addRect(sx + 2, sy + 2, 30, 16, PALETTE.nexus, 0.22);
+        this.addRect(sx + 4, sy + 4, 26, 2, PALETTE.nexusBrass, 0.84);
+        this.addRect(sx + 4, sy + 9, 20, 2, PALETTE.nexus, 0.58);
+        this.addRect(sx + 4, sy + 13, 14, 1, PALETTE.nexusBrass, 0.55);
       }
     }
 
-    this.addRect(x + width - 48, y + 16, 28, height - 36, 0x101b2b);
-    for (let i = 0; i < 7; i += 1) {
-      this.addRect(x + width - 44, y + 22 + i * 20, 20, 2, PALETTE.nexus, 0.4);
+    this.addRect(x + width - 52, y + 14, 34, height - 28, 0x341f16);
+    for (let i = 0; i < 9; i += 1) {
+      const lightColor = i % 2 === 0 ? PALETTE.nexus : PALETTE.nexusBrass;
+      this.addRect(x + width - 47, y + 20 + i * 17, 24, 2, lightColor, 0.58);
+    }
+
+    this.addRect(x + 16, y + height - 26, width - 86, 10, 0x3a251c);
+    for (let i = 0; i < 12; i += 1) {
+      const controlColor = i % 3 === 0 ? PALETTE.nexusBrass : PALETTE.nexus;
+      this.addRect(x + 20 + i * 12, y + height - 22, 7, 3, controlColor, i % 3 === 0 ? 0.88 : 0.58);
     }
   }
 
-  private drawPivotTradingStation(tileX: number, tileY: number, widthTiles: number, _heightTiles: number): void {
+  private drawPivotTradingStation(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.addRect(x + 12, y + 18, 92, 30, 0x0d1a13);
-    this.addRect(x + 14, y + 20, 88, 26, PALETTE.pivot, 0.18);
-    this.addRect(x + 16, y + 39, 16, 2, PALETTE.pivot, 0.55);
-    this.addRect(x + 34, y + 33, 14, 2, PALETTE.pivot, 0.8);
-    this.addRect(x + 50, y + 28, 14, 2, PALETTE.pivot, 0.75);
-    this.addRect(x + 66, y + 31, 14, 2, PALETTE.pivot, 0.7);
-    this.addRect(x + 82, y + 24, 14, 2, PALETTE.pivot, 0.78);
-
-    this.addRect(x + 110, y + 18, 116, 30, 0x0d1a13);
-    this.addRect(x + 112, y + 20, 112, 26, PALETTE.pivot, 0.16);
-
-    for (let i = 0; i < 6; i += 1) {
-      this.addRect(x + 117 + i * 18, y + 39 - i * 2, 14, 2, PALETTE.pivot, 0.72);
+    this.addRect(x + 12, y + 16, 96, 34, 0x312418);
+    this.addRect(x + 14, y + 18, 92, 30, PALETTE.pivot, 0.16);
+    for (let i = 0; i < 5; i += 1) {
+      const barHeight = 4 + i * 4;
+      const barColor = i % 2 === 0 ? PALETTE.pivot : PALETTE.pivotGold;
+      this.addRect(x + 20 + i * 16, y + 44 - barHeight, 10, barHeight, barColor, 0.74);
     }
 
-    this.addRect(x + 12, y + 56, 214, 12, 0x112016);
+    this.addRect(x + 112, y + 16, 114, 34, 0x312418);
+    this.addRect(x + 114, y + 18, 110, 30, PALETTE.pivotGold, 0.16);
+    for (let i = 0; i < 6; i += 1) {
+      const candleColor = i % 2 === 0 ? PALETTE.pivotGold : PALETTE.pivot;
+      this.addRect(x + 120 + i * 16, y + 24 + (i % 3), 8, 16 - (i % 2) * 5, candleColor, 0.84);
+      this.addRect(x + 123 + i * 16, y + 21, 2, 22, candleColor, 0.65);
+    }
+
+    this.addRect(x + 12, y + 56, 214, 12, 0x3a2a1d);
     for (let i = 0; i < 14; i += 1) {
-      this.addRect(x + 16 + i * 15, y + 60, 10, 2, PALETTE.pivot, i % 3 === 0 ? 0.7 : 0.35);
+      const tickerColor = i % 3 === 0 ? PALETTE.pivotGold : PALETTE.pivot;
+      this.addRect(x + 18 + i * 15, y + 60, 10, 2, tickerColor, i % 4 === 0 ? 0.84 : 0.46);
     }
   }
 
@@ -371,24 +395,26 @@ export class OfficeScene {
     const width = widthTiles * TILE_SIZE;
     const height = heightTiles * TILE_SIZE;
 
-    this.addRect(x + 18, y + 18, 38, 38, 0x23121a);
-    this.addRect(x + 24, y + 24, 26, 20, PALETTE.aegis, 0.22);
-    this.addRect(x + 30, y + 20, 14, 8, PALETTE.aegis, 0.28);
-    this.addRect(x + 33, y + 23, 8, 7, 0x151922);
-    this.addRect(x + 31, y + 31, 12, 10, PALETTE.aegis, 0.62);
+    this.addRect(x + 16, y + 16, 48, 44, 0x351a1f);
+    this.addRect(x + 22, y + 30, 36, 24, PALETTE.aegisRed, 0.35);
+    this.addRect(x + 30, y + 20, 20, 10, PALETTE.aegis, 0.36);
+    this.addRect(x + 34, y + 18, 12, 4, PALETTE.text, 0.22);
+    this.addRect(x + 38, y + 38, 4, 8, 0x2a1216);
 
-    this.addRect(x + 74, y + 18, 38, 38, 0x23121a);
-    this.addRect(x + 84, y + 24, 18, 8, PALETTE.aegis, 0.28);
-    this.addRect(x + 80, y + 32, 26, 12, PALETTE.aegis, 0.58);
-    this.addRect(x + 84, y + 34, 18, 8, 0x151922);
+    this.addRect(x + 74, y + 16, 56, 44, 0x32161c);
+    this.addRect(x + 92, y + 22, 20, 6, PALETTE.aegis, 0.44);
+    this.addRect(x + 86, y + 28, 32, 20, PALETTE.aegisRed, 0.56);
+    this.addRect(x + 90, y + 32, 24, 12, 0x2b1518, 0.9);
+    this.addRect(x + 98, y + 34, 8, 8, PALETTE.aegis, 0.66);
 
-    this.addRect(x + width - 44, y + 20, 16, 16, PALETTE.aegis, 0.86);
-    this.addRect(x + width - 48, y + 16, 24, 24, PALETTE.aegis, 0.24);
-    this.addRect(x + width - 37, y + 27, 2, 2, 0xffffff, 0.8);
+    this.addRect(x + width - 48, y + 18, 22, 22, PALETTE.aegis, 0.22);
+    this.addRect(x + width - 43, y + 23, 12, 12, PALETTE.aegisRed, 0.86);
+    this.addRect(x + width - 39, y + 27, 4, 4, PALETTE.text, 0.86);
 
-    this.addRect(x + 14, y + height - 24, width - 28, 10, 0x24131b);
+    this.addRect(x + 14, y + height - 26, width - 28, 12, 0x3a1b20);
     for (let i = 0; i < 8; i += 1) {
-      this.addRect(x + 20 + i * 28, y + height - 21, 18, 3, i % 2 === 0 ? PALETTE.aegis : 0x121821, 0.8);
+      const pulseColor = i % 2 === 0 ? PALETTE.aegisRed : PALETTE.aegis;
+      this.addRect(x + 20 + i * 28, y + height - 22, 18, 3, pulseColor, 0.78);
     }
   }
 
@@ -397,27 +423,34 @@ export class OfficeScene {
     const y = tileY * TILE_SIZE;
     const width = widthTiles * TILE_SIZE;
 
-    this.addRect(x + 10, y + 14, 32, 96, 0x1a1727);
-    this.addRect(x + width - 42, y + 14, 32, 96, 0x1a1727);
+    this.addRect(x + 10, y + 14, 34, 98, 0x322338);
+    this.addRect(x + width - 44, y + 14, 34, 98, 0x322338);
 
     for (let shelf = 0; shelf < 5; shelf += 1) {
       const shelfY = y + 24 + shelf * 17;
-      this.addRect(x + 12, shelfY, 28, 2, PALETTE.researcher, 0.35);
-      this.addRect(x + width - 40, shelfY, 28, 2, PALETTE.researcher, 0.35);
-      for (let book = 0; book < 4; book += 1) {
-        this.addRect(x + 14 + book * 6, shelfY - 10, 4, 9, PALETTE.researcher, 0.25 + book * 0.1);
-        this.addRect(x + width - 38 + book * 6, shelfY - 10, 4, 9, PALETTE.researcher, 0.2 + book * 0.1);
+      this.addRect(x + 12, shelfY, 30, 2, PALETTE.researcherPaper, 0.36);
+      this.addRect(x + width - 42, shelfY, 30, 2, PALETTE.researcherPaper, 0.36);
+
+      for (let book = 0; book < 5; book += 1) {
+        const bookColor = book % 2 === 0 ? PALETTE.researcher : PALETTE.researcherPaper;
+        this.addRect(x + 14 + book * 5, shelfY - 10, 3, 9, bookColor, 0.26 + book * 0.08);
+        this.addRect(x + width - 40 + book * 5, shelfY - 10, 3, 9, bookColor, 0.22 + book * 0.08);
       }
     }
 
-    this.addRect(x + 62, y + 22, 128, 52, 0x171425);
-    this.addRect(x + 64, y + 24, 124, 48, PALETTE.researcher, 0.12);
-    this.addRect(x + 72, y + 32, 36, 22, 0xd4d7e1);
-    this.addRect(x + 114, y + 38, 28, 18, 0xcfd3dc);
-    this.addRect(x + 150, y + 30, 30, 20, 0xdce0ea);
-    this.addRect(x + 74, y + 36, 30, 2, PALETTE.researcher, 0.4);
-    this.addRect(x + 116, y + 43, 24, 2, PALETTE.researcher, 0.35);
-    this.addRect(x + 152, y + 35, 24, 2, PALETTE.researcher, 0.36);
+    this.addRect(x + 60, y + 24, 132, 54, 0x2d1f30);
+    this.addRect(x + 62, y + 26, 128, 50, PALETTE.researcher, 0.14);
+    this.addRect(x + 72, y + 34, 38, 20, PALETTE.researcherPaper, 0.82);
+    this.addRect(x + 114, y + 39, 26, 17, PALETTE.researcherPaper, 0.75);
+    this.addRect(x + 146, y + 31, 32, 22, PALETTE.researcherPaper, 0.8);
+    this.addRect(x + 76, y + 38, 30, 2, PALETTE.researcher, 0.42);
+    this.addRect(x + 116, y + 44, 22, 2, PALETTE.researcher, 0.35);
+    this.addRect(x + 150, y + 36, 24, 2, PALETTE.researcher, 0.36);
+
+    this.addRect(x + width - 64, y + 84, 16, 6, 0x3e2d1f);
+    this.addRect(x + width - 57, y + 68, 2, 16, 0x7a6450);
+    this.addRect(x + width - 62, y + 62, 12, 7, PALETTE.researcherPaper, 0.85);
+    this.addRect(x + width - 60, y + 64, 8, 2, PALETTE.researcher, 0.32);
   }
 
   private drawContractorWorkstations(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
@@ -427,21 +460,22 @@ export class OfficeScene {
     const height = heightTiles * TILE_SIZE;
 
     for (let row = 0; row < 3; row += 1) {
-      const rowY = y + 32 + row * 96;
-      this.addRect(x + 14, rowY, width - 28, 12, 0x1a202e);
-      this.addRect(x + 14, rowY, width - 28, 2, PALETTE.contractor, 0.45);
+      const rowY = y + 30 + row * 94;
+      this.addRect(x + 12, rowY, width - 24, 14, 0x3a291f);
+      this.addRect(x + 12, rowY, width - 24, 2, PALETTE.contractor, 0.52);
+      this.addRect(x + 20, rowY + 14, width - 40, 2, PALETTE.border, 0.5);
 
-      for (let seat = 0; seat < 3; seat += 1) {
-        const seatX = x + 26 + seat * 86;
-        this.addRect(seatX, rowY - 18, 24, 16, 0x151d2a);
-        this.addRect(seatX + 2, rowY - 16, 20, 12, PALETTE.contractor, 0.24);
-        this.addRect(seatX + 4, rowY - 10, 16, 2, PALETTE.contractor, 0.56);
+      for (let seat = 0; seat < 4; seat += 1) {
+        const seatX = x + 24 + seat * 70;
+        this.addRect(seatX, rowY - 18, 22, 16, 0x312217);
+        this.addRect(seatX + 2, rowY - 16, 18, 12, PALETTE.contractor, 0.26);
+        this.addRect(seatX + 4, rowY - 10, 14, 2, PALETTE.contractor, 0.62);
       }
     }
 
-    this.addRect(x + width - 38, y + 14, 18, height - 28, 0x1d2028);
+    this.addRect(x + width - 40, y + 14, 20, height - 28, 0x3a271f);
     for (let i = 0; i < 8; i += 1) {
-      this.addRect(x + width - 35, y + 24 + i * 20, 12, 2, PALETTE.contractor, 0.32);
+      this.addRect(x + width - 36, y + 24 + i * 20, 12, 2, PALETTE.contractor, 0.36);
     }
   }
 
@@ -449,14 +483,14 @@ export class OfficeScene {
     const x = tile.x * TILE_SIZE + 2;
     const y = tile.y * TILE_SIZE + 8;
 
-    this.addRect(x - 2, y + 12, 32, 4, 0x05070f, 0.46);
+    this.addRect(x - 2, y + 12, 32, 4, 0x140d09, 0.5);
     this.addRect(x, y, 28, 14, deskColor);
-    this.addRect(x, y, 28, 3, accentColor, 0.88);
-    this.addRect(x + 2, y + 14, 4, 7, 0x0d1320);
-    this.addRect(x + 22, y + 14, 4, 7, 0x0d1320);
-    this.addRect(x + 15, y - 8, 11, 7, 0x121a28);
-    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.35);
-    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.6);
+    this.addRect(x, y, 28, 3, accentColor, 0.9);
+    this.addRect(x + 2, y + 14, 4, 7, 0x2b1c15);
+    this.addRect(x + 22, y + 14, 4, 7, 0x2b1c15);
+    this.addRect(x + 15, y - 8, 11, 7, 0x2d1f18);
+    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.38);
+    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.62);
   }
 
   private drawChair(tile: TilePoint, seatColor: number): void {
@@ -464,8 +498,8 @@ export class OfficeScene {
     const y = tile.y * TILE_SIZE + 10;
 
     this.addRect(x, y, 16, 10, seatColor);
-    this.addRect(x + 2, y - 4, 12, 4, 0x273142);
-    this.addRect(x + 7, y + 10, 2, 6, 0x111827);
+    this.addRect(x + 2, y - 4, 12, 4, 0x3b2a22);
+    this.addRect(x + 7, y + 10, 2, 6, 0x2a1c14);
   }
 
   private syncAgents(agents: AgentState[]): void {
