@@ -1,19 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;600;700;800&display=swap");
 
 :root {
-  --bg-0: #3a241a;
-  --bg-1: #5a3a2a;
-  --panel-bg: #4a2f22;
-  --canvas-panel: #6b4a37;
-  --floor-main: #c8a27f;
-  --floor-alt: #b88f6a;
-  --wall-trim: #8b6348;
-  --border: #9a7459;
-  --border-soft: #8b6348;
-  --text: #f8e8d8;
-  --muted: #e4c3a8;
-  --card: rgba(107, 74, 55, 0.88);
-  --card-elevated: rgba(118, 84, 62, 0.94);
+  --bg-0: #7a5943;
+  --bg-1: #b78b66;
+  --panel-bg: #9c7457;
+  --canvas-panel: #dbc0a2;
+  --floor-main: #f0dcc4;
+  --floor-alt: #e5c8a6;
+  --wall-trim: #be8d63;
+  --border: #bf8f66;
+  --border-soft: #b5865e;
+  --text: #fff3e6;
+  --muted: #f0d8c0;
+  --card: rgba(164, 122, 89, 0.76);
+  --card-elevated: rgba(177, 133, 97, 0.86);
 
   --nexus-amber: #f6ad55;
   --nexus-brass: #e39e52;
@@ -27,7 +27,7 @@
   font-family: "JetBrains Mono", "Fira Mono", "Consolas", monospace;
   color: var(--text);
   background:
-    radial-gradient(circle at 14% 12%, rgba(248, 232, 216, 0.1) 0%, transparent 42%),
+    radial-gradient(circle at 14% 12%, rgba(255, 244, 231, 0.2) 0%, transparent 44%),
     linear-gradient(155deg, var(--bg-0) 0%, var(--panel-bg) 56%, var(--bg-1) 100%);
 }
 
@@ -48,9 +48,9 @@ body {
 
 .dashboard-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px;
-  max-width: 1380px;
+  max-width: 1540px;
   margin: 0 auto;
 }
 
@@ -68,7 +68,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 14px;
-  background: linear-gradient(140deg, rgba(103, 72, 54, 0.94), rgba(74, 47, 34, 0.95));
+  background: linear-gradient(140deg, rgba(191, 145, 108, 0.9), rgba(156, 115, 84, 0.92));
   box-shadow: 0 0 0 1px rgba(248, 232, 216, 0.09) inset, 0 12px 24px rgba(28, 18, 13, 0.24);
 }
 
@@ -125,7 +125,7 @@ body {
 
 .office-canvas {
   width: 100%;
-  min-height: 544px;
+  min-height: 620px;
   border: 2px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
@@ -141,7 +141,7 @@ body {
 }
 
 .side-pane {
-  background: linear-gradient(165deg, rgba(94, 65, 48, 0.95), rgba(74, 50, 37, 0.95));
+  background: linear-gradient(165deg, rgba(181, 137, 102, 0.9), rgba(148, 109, 79, 0.92));
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
@@ -177,7 +177,7 @@ body {
 
 .metric-grid article {
   padding: 10px;
-  background: linear-gradient(130deg, rgba(126, 88, 66, 0.88), rgba(102, 71, 53, 0.88));
+  background: linear-gradient(130deg, rgba(197, 151, 111, 0.84), rgba(169, 127, 94, 0.84));
 }
 
 .metric-grid p {
@@ -239,7 +239,7 @@ body {
 
 .agent-card.contractor {
   border-style: dashed;
-  background: rgba(102, 71, 52, 0.8);
+  background: rgba(173, 131, 96, 0.72);
 }
 
 .agent-card-header {
@@ -364,7 +364,7 @@ body {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(148, 110, 85, 0.34);
+  background: rgba(184, 141, 104, 0.34);
   border: 1px solid rgba(154, 116, 89, 0.68);
   color: #f6e3d1;
 }
@@ -381,7 +381,7 @@ body {
 
 .bridge-meta {
   padding: 10px;
-  background: linear-gradient(140deg, rgba(116, 81, 60, 0.88), rgba(90, 62, 46, 0.88));
+  background: linear-gradient(140deg, rgba(186, 142, 106, 0.84), rgba(160, 120, 89, 0.84));
 }
 
 .bridge-meta p {
@@ -398,7 +398,7 @@ body {
   min-height: 170px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(150deg, rgba(112, 79, 58, 0.88), rgba(86, 60, 45, 0.88));
+  background: linear-gradient(150deg, rgba(181, 138, 103, 0.84), rgba(154, 115, 85, 0.84));
 }
 
 .event-log ul {
@@ -437,7 +437,7 @@ body {
   }
 
   .office-canvas {
-    min-height: 400px;
+    min-height: 460px;
   }
 
   .side-pane {

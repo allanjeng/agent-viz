@@ -191,26 +191,26 @@ export class OfficeScene {
     const heightPx = OFFICE_HEIGHT_TILES * TILE_SIZE;
 
     this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundTop, 1);
-    this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundBottom, 0.18);
-    this.addRect(0, 0, widthPx, Math.round(heightPx * 0.34), PALETTE.text, 0.04);
+    this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundBottom, 0.16);
+    this.addRect(0, 0, widthPx, Math.round(heightPx * 0.32), PALETTE.text, 0.045);
 
-    this.drawTiledFloor();
+    this.drawWarmFloor();
     this.drawPerimeterWalls();
 
-    this.drawZoneFrame(1, 1, 8, 7, PALETTE.nexus);
-    this.drawNexusCommandCenter(1, 1, 8, 7);
+    this.drawZoneFrame(2, 2, 9, 8, PALETTE.nexus);
+    this.drawNexusCommandCenter(2, 2, 9, 8);
 
-    this.drawZoneFrame(8, 1, 8, 7, PALETTE.pivot);
-    this.drawPivotTradingStation(8, 1, 8, 7);
+    this.drawZoneFrame(11, 2, 9, 8, PALETTE.pivot);
+    this.drawPivotTradingStation(11, 2, 9, 8);
 
-    this.drawZoneFrame(1, 8, 8, 8, PALETTE.aegis);
-    this.drawAegisSecurityStation(1, 8, 8, 8);
+    this.drawZoneFrame(2, 10, 9, 8, PALETTE.aegis);
+    this.drawAegisSecurityStation(2, 10, 9, 8);
 
-    this.drawZoneFrame(8, 8, 8, 8, PALETTE.researcher);
-    this.drawResearcherLibrary(8, 8, 8, 8);
+    this.drawZoneFrame(11, 10, 9, 8, PALETTE.researcher);
+    this.drawResearcherLibrary(11, 10, 9, 8);
 
-    this.drawZoneFrame(17, 2, 10, 13, PALETTE.contractor);
-    this.drawContractorWorkstations(17, 2, 10, 13);
+    this.drawZoneFrame(21, 2, 10, 16, PALETTE.contractor);
+    this.drawContractorWorkstations(21, 2, 10, 16);
 
     for (const [id, desk] of Object.entries(PERSISTENT_DESKS)) {
       this.drawPersistentDesk(id, desk);
@@ -223,51 +223,53 @@ export class OfficeScene {
     this.drawAmbientDecor();
 
     const doorY = heightPx - TILE_SIZE * 2;
-    this.addRect(widthPx - 18, doorY, 18, TILE_SIZE, PALETTE.wall, 0.88);
-    this.addRect(widthPx - 14, doorY + 5, 12, TILE_SIZE - 10, PALETTE.floorA, 0.35);
+    this.addRect(widthPx - 18, doorY, 18, TILE_SIZE, PALETTE.wallTrim, 0.9);
+    this.addRect(widthPx - 14, doorY + 6, 12, TILE_SIZE - 12, PALETTE.floorA, 0.5);
 
     this.addRect(0, 0, widthPx, 8, PALETTE.text, 0.05);
   }
 
-  private drawTiledFloor(): void {
-    for (let y = 1; y < OFFICE_HEIGHT_TILES - 1; y += 1) {
-      for (let x = 1; x < OFFICE_WIDTH_TILES - 1; x += 1) {
-        const px = x * TILE_SIZE;
-        const py = y * TILE_SIZE;
-        const blockX = Math.floor((x - 1) / 4);
-        const blockY = Math.floor((y - 1) / 3);
-        const tileColor = (blockX + blockY) % 2 === 0 ? PALETTE.floorA : PALETTE.floorB;
+  private drawWarmFloor(): void {
+    const floorX = TILE_SIZE;
+    const floorY = TILE_SIZE;
+    const floorWidth = (OFFICE_WIDTH_TILES - 2) * TILE_SIZE;
+    const floorHeight = (OFFICE_HEIGHT_TILES - 2) * TILE_SIZE;
 
-        this.addRect(px, py, TILE_SIZE, TILE_SIZE, tileColor, 0.98);
+    this.addRect(floorX, floorY, floorWidth, floorHeight, PALETTE.floorA, 1);
+    this.addRect(floorX, floorY, floorWidth, floorHeight, PALETTE.floorB, 0.16);
 
-        if ((x - 1) % 4 === 0) {
-          this.addRect(px, py, 1, TILE_SIZE, PALETTE.border, 0.1);
-        }
+    const plankSpacing = Math.max(18, Math.round(TILE_SIZE * 1.4));
+    for (let y = floorY + plankSpacing; y < floorY + floorHeight; y += plankSpacing) {
+      this.addRect(floorX, y, floorWidth, 1, PALETTE.floorLine, 0.2);
+    }
 
-        if ((y - 1) % 3 === 0) {
-          this.addRect(px, py, TILE_SIZE, 1, PALETTE.border, 0.08);
-        }
-      }
+    const seamSpacing = TILE_SIZE * 6;
+    for (let x = floorX + seamSpacing; x < floorX + floorWidth; x += seamSpacing) {
+      this.addRect(x, floorY, 1, floorHeight, PALETTE.floorLine, 0.08);
     }
   }
 
   private drawPerimeterWalls(): void {
     const wallColor = PALETTE.wall;
     const trimColor = PALETTE.wallTrim;
+    const fullWidth = OFFICE_WIDTH_TILES * TILE_SIZE;
+    const fullHeight = OFFICE_HEIGHT_TILES * TILE_SIZE;
     const innerHeight = (OFFICE_HEIGHT_TILES - 2) * TILE_SIZE;
     const innerWidth = (OFFICE_WIDTH_TILES - 2) * TILE_SIZE;
 
-    this.addRect(0, 0, OFFICE_WIDTH_TILES * TILE_SIZE, TILE_SIZE, wallColor, 0.98);
-    this.addRect(0, (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE, OFFICE_WIDTH_TILES * TILE_SIZE, TILE_SIZE, wallColor, 0.98);
+    this.addRect(0, 0, fullWidth, TILE_SIZE, wallColor, 0.98);
+    this.addRect(0, fullHeight - TILE_SIZE, fullWidth, TILE_SIZE, wallColor, 0.98);
     this.addRect(0, TILE_SIZE, TILE_SIZE, innerHeight, wallColor, 0.98);
-    this.addRect((OFFICE_WIDTH_TILES - 1) * TILE_SIZE, TILE_SIZE, TILE_SIZE, innerHeight, wallColor, 0.98);
+    this.addRect(fullWidth - TILE_SIZE, TILE_SIZE, TILE_SIZE, innerHeight, wallColor, 0.98);
 
-    this.addRect(TILE_SIZE, TILE_SIZE, innerWidth, 2, trimColor, 0.24);
-    this.addRect(TILE_SIZE, (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE - 2, innerWidth, 2, trimColor, 0.18);
+    this.addRect(TILE_SIZE, TILE_SIZE + 2, innerWidth, 2, trimColor, 0.3);
+    this.addRect(TILE_SIZE, fullHeight - TILE_SIZE - 4, innerWidth, 2, trimColor, 0.26);
+    this.addRect(TILE_SIZE + 2, TILE_SIZE, 2, innerHeight, trimColor, 0.22);
+    this.addRect(fullWidth - TILE_SIZE - 4, TILE_SIZE, 2, innerHeight, trimColor, 0.22);
 
-    this.addRect(8 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.3);
-    this.addRect(16 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.28);
-    this.addRect(TILE_SIZE, 8 * TILE_SIZE - 1, 15 * TILE_SIZE, 2, trimColor, 0.26);
+    this.addRect(11 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.26);
+    this.addRect(20 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.26);
+    this.addRect(TILE_SIZE, 10 * TILE_SIZE - 1, 19 * TILE_SIZE, 2, trimColor, 0.24);
   }
 
   private drawZoneFrame(
@@ -282,57 +284,67 @@ export class OfficeScene {
     const width = widthTiles * TILE_SIZE;
     const height = heightTiles * TILE_SIZE;
 
-    this.addRect(x, y, width, height, PALETTE.panelA, 0.2);
-    this.addRect(x + 1, y + 1, width - 2, height - 2, PALETTE.panelB, 0.08);
-    this.addRect(x, y, width, 1, accent, 0.65);
-    this.addRect(x, y + height - 1, width, 1, accent, 0.5);
-    this.addRect(x, y, 1, height, accent, 0.48);
-    this.addRect(x + width - 1, y, 1, height, accent, 0.48);
+    this.addRect(x, y, width, height, PALETTE.panelA, 0.14);
+    this.addRect(x + 1, y + 1, width - 2, height - 2, PALETTE.panelB, 0.06);
+    this.addRect(x, y, width, 1, accent, 0.64);
+    this.addRect(x, y + height - 1, width, 1, accent, 0.46);
+    this.addRect(x, y, 1, height, accent, 0.44);
+    this.addRect(x + width - 1, y, 1, height, accent, 0.44);
   }
 
-  private drawNexusCommandCenter(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
+  private drawNexusCommandCenter(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
 
-    this.drawFreeNamed("tech_console_long", x + 28, y + 72, { alpha: 0.9, tint: 0xf6ad55 });
-    this.drawFreeNamed("tech_display_left", x + 28, y + 26, { alpha: 0.9, tint: 0xf8d0a2 });
-    this.drawFreeNamed("tech_chip_panel", x + 176, y + 30, { alpha: 0.86, tint: 0xf5bc75 });
+    this.drawFreeNamed("tech_console_long", x + 26, y + height - 72, { alpha: 0.9, tint: 0xf6ad55 });
+    this.drawFreeNamed("tech_display_left", x + 24, y + 18, { alpha: 0.9, tint: 0xf8d0a2 });
+    this.drawFreeNamed("tech_chip_panel", x + width - 78, y + 20, { alpha: 0.88, tint: 0xf5bc75 });
   }
 
-  private drawPivotTradingStation(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
+  private drawPivotTradingStation(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
 
-    this.drawFreeNamed("tech_trading_board", x + 30, y + 74, { alpha: 0.9, tint: 0x9bbf5f });
-    this.drawFreeNamed("tech_chart_panel", x + 178, y + 30, { alpha: 0.9, tint: 0xcadf95 });
-    this.drawFreeNamed("tech_ticker_strip", x + 34, y + 32, { alpha: 0.84, tint: 0xbecf81 });
+    this.drawFreeNamed("tech_trading_board", x + 24, y + height - 70, { alpha: 0.9, tint: 0x9bbf5f });
+    this.drawFreeNamed("tech_chart_panel", x + width - 82, y + 20, { alpha: 0.9, tint: 0xcadf95 });
+    this.drawFreeNamed("tech_ticker_strip", x + 30, y + 24, { alpha: 0.84, tint: 0xbecf81 });
   }
 
-  private drawAegisSecurityStation(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
+  private drawAegisSecurityStation(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
 
-    this.drawFreeNamed("tech_server_frame", x + 26, y + 68, { alpha: 0.92, tint: 0xe57373 });
-    this.drawFreeNamed("tech_gate_bottom", x + 88, y + 138, { alpha: 0.86, tint: 0xd76a6a });
-    this.drawFreeNamed("lab_security_door", x + 186, y + 112, { alpha: 0.9, tint: 0xf0a0a0 });
+    this.drawFreeNamed("tech_server_frame", x + 20, y + height - 86, { alpha: 0.92, tint: 0xe57373 });
+    this.drawFreeNamed("tech_gate_bottom", x + 92, y + height - 56, { alpha: 0.86, tint: 0xd76a6a });
+    this.drawFreeNamed("lab_security_door", x + width - 74, y + height - 74, { alpha: 0.9, tint: 0xf0a0a0 });
   }
 
-  private drawResearcherLibrary(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
+  private drawResearcherLibrary(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
 
-    this.drawFreeNamed("lab_archive_wide_a", x + 16, y + 20, { alpha: 0.94, tint: 0xe7d9ff });
-    this.drawFreeNamed("lab_archive_wide_b", x + 16, y + 108, { alpha: 0.9, tint: 0xd8c6f8 });
-    this.drawFreeNamed("lab_study_lamp", x + 142, y + 44, { alpha: 0.92, tint: 0xffe2b9 });
+    this.drawFreeNamed("lab_archive_wide_a", x + 14, y + 18, { alpha: 0.94, tint: 0xe7d9ff });
+    this.drawFreeNamed("lab_archive_wide_b", x + 14, y + height - 82, { alpha: 0.9, tint: 0xd8c6f8 });
+    this.drawFreeNamed("lab_study_lamp", x + width - 118, y + 36, { alpha: 0.92, tint: 0xffe2b9 });
   }
 
-  private drawContractorWorkstations(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
+  private drawContractorWorkstations(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
 
+    const rowSpacing = Math.floor((height - 140) / 3);
     for (let row = 0; row < 3; row += 1) {
-      const rowY = y + 34 + row * 122;
-      this.drawFreeNamed("tech_hotdesk_strip", x + 34, rowY, { alpha: 0.84, tint: 0xe2b183 });
+      const rowY = y + 36 + row * rowSpacing;
+      this.drawFreeNamed("tech_hotdesk_strip", x + 28, rowY, { alpha: 0.84, tint: 0xe5b88e });
     }
   }
 
@@ -384,20 +396,21 @@ export class OfficeScene {
     const x = tile.x * TILE_SIZE + 2;
     const y = tile.y * TILE_SIZE + 8;
 
-    this.addRect(x - 2, y + 12, 32, 4, 0x3c271c, 0.35);
+    this.addRect(x - 2, y + 12, 32, 4, 0x6f523f, 0.28);
     this.addRect(x, y, 28, 14, deskColor);
     this.addRect(x, y, 28, 3, accentColor, 0.9);
-    this.addRect(x + 2, y + 14, 4, 7, 0x5b4333);
-    this.addRect(x + 22, y + 14, 4, 7, 0x5b4333);
-    this.addRect(x + 15, y - 8, 11, 7, 0x594133);
-    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.44);
-    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.56);
+    this.addRect(x + 2, y + 14, 4, 7, 0x8c6b55);
+    this.addRect(x + 22, y + 14, 4, 7, 0x8c6b55);
+    this.addRect(x + 15, y - 8, 11, 7, 0x7b6050);
+    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.4);
+    this.addRect(x + 4, y + 5, 8, 4, PALETTE.wallTrim, 0.5);
   }
 
   private drawAmbientDecor(): void {
-    this.drawFreeNamed("lab_hanging_lamp", 6 * TILE_SIZE, 2, { alpha: 0.78, tint: 0xffddb0 });
-    this.drawFreeNamed("lab_hanging_lamp", 13 * TILE_SIZE, 2, { alpha: 0.78, tint: 0xffddb0 });
-    this.drawFreeNamed("lab_hanging_lamp", 22 * TILE_SIZE, 2, { alpha: 0.72, tint: 0xffd39c });
+    this.drawFreeNamed("lab_hanging_lamp", 6 * TILE_SIZE, 2, { alpha: 0.76, tint: 0xffddb0 });
+    this.drawFreeNamed("lab_hanging_lamp", 15 * TILE_SIZE, 2, { alpha: 0.76, tint: 0xffddb0 });
+    this.drawFreeNamed("lab_hanging_lamp", 24 * TILE_SIZE, 2, { alpha: 0.72, tint: 0xffd39c });
+    this.drawFreeNamed("lab_hanging_lamp", 30 * TILE_SIZE, 2, { alpha: 0.68, tint: 0xffd39c });
   }
 
   private addRect(

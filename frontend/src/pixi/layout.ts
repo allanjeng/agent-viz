@@ -1,6 +1,6 @@
 export const TILE_SIZE = 32;
-export const OFFICE_WIDTH_TILES = 28;
-export const OFFICE_HEIGHT_TILES = 17;
+export const OFFICE_WIDTH_TILES = 33;
+export const OFFICE_HEIGHT_TILES = 20;
 
 export type TilePoint = {
   x: number;
@@ -8,19 +8,19 @@ export type TilePoint = {
 };
 
 export const PERSISTENT_DESKS: Record<string, TilePoint> = {
-  nexus: { x: 4, y: 5 },
-  pivot: { x: 10, y: 5 },
-  aegis: { x: 4, y: 11 },
-  researcher: { x: 10, y: 11 },
+  nexus: { x: 5, y: 6 },
+  pivot: { x: 14, y: 6 },
+  aegis: { x: 5, y: 14 },
+  researcher: { x: 14, y: 14 },
 };
 
 export const CONTRACTOR_DESKS: TilePoint[] = [
-  { x: 18, y: 4 },
-  { x: 23, y: 4 },
-  { x: 18, y: 7 },
-  { x: 23, y: 7 },
-  { x: 18, y: 10 },
-  { x: 23, y: 10 },
+  { x: 24, y: 5 },
+  { x: 28, y: 5 },
+  { x: 24, y: 9 },
+  { x: 28, y: 9 },
+  { x: 24, y: 13 },
+  { x: 28, y: 13 },
 ];
 
 export const ENTRY_POINT = {
