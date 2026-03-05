@@ -71,90 +71,92 @@ export default function App(): JSX.Element {
       </main>
 
       <aside className="side-pane">
-        <section className="metric-grid">
-          <article>
+        <section className="metric-strip" aria-label="System summary">
+          <article className="metric-chip">
             <h2>Sessions</h2>
             <p>{snapshot.stats.sessionCount}</p>
           </article>
-          <article>
+          <article className="metric-chip">
             <h2>Persistent</h2>
             <p>{persistent.length}</p>
           </article>
-          <article>
+          <article className="metric-chip">
             <h2>Contractors</h2>
             <p>{contractors.length}</p>
           </article>
         </section>
 
-        <section className="agent-roster">
-          <h2>Agents</h2>
-          {persistent.map((agent) => (
-            <div key={agent.id} className={`agent-card status-${agent.status}`}>
-              <div className="agent-card-header">
-                <div className="agent-card-identity">
-                  <span className={`agent-avatar ${archetypeFor(agent)}`} />
-                  <div>
-                    <span className="agent-name">{agent.name}</span>
-                    <span className="agent-role">persistent</span>
+        <div className="side-pane-scroll">
+          <section className="agent-roster">
+            <h2>Agents</h2>
+            {persistent.map((agent) => (
+              <div key={agent.id} className={`agent-card status-${agent.status}`}>
+                <div className="agent-card-header">
+                  <div className="agent-card-identity">
+                    <span className={`agent-avatar ${archetypeFor(agent)}`} />
+                    <div>
+                      <span className="agent-name">{agent.name}</span>
+                      <span className="agent-role">persistent</span>
+                    </div>
+                  </div>
+                  <div className="agent-status-wrap">
+                    <span className={`status-dot ${agent.status}`} />
+                    <span className="status-label">{agent.status}</span>
                   </div>
                 </div>
-                <div className="agent-status-wrap">
-                  <span className={`status-dot ${agent.status}`} />
-                  <span className="status-label">{agent.status}</span>
+                <div className="agent-card-meta">
+                  {agent.model && <span className="tag model">{agent.model}</span>}
+                  {agent.sessionCount != null && <span className="tag">{agent.sessionCount} sessions</span>}
+                  {agent.totalTokens != null && <span className="tag">{formatTokens(agent.totalTokens)} tokens</span>}
+                  <span className="tag time">{timeAgo(agent.lastActivity)}</span>
                 </div>
               </div>
-              <div className="agent-card-meta">
-                {agent.model && <span className="tag model">{agent.model}</span>}
-                {agent.sessionCount != null && <span className="tag">{agent.sessionCount} sessions</span>}
-                {agent.totalTokens != null && <span className="tag">{formatTokens(agent.totalTokens)} tokens</span>}
-                <span className="tag time">{timeAgo(agent.lastActivity)}</span>
-              </div>
-            </div>
-          ))}
-          {contractors.length > 0 && (
-            <>
-              <h3>Contractors</h3>
-              {contractors.map((agent) => (
-                <div key={agent.id} className={`agent-card contractor status-${agent.status}`}>
-                  <div className="agent-card-header">
-                    <div className="agent-card-identity">
-                      <span className={`agent-avatar ${archetypeFor(agent)}`} />
-                      <div>
-                        <span className="agent-name">{agent.name}</span>
-                        <span className="agent-role">contractor</span>
+            ))}
+            {contractors.length > 0 && (
+              <>
+                <h3>Contractors</h3>
+                {contractors.map((agent) => (
+                  <div key={agent.id} className={`agent-card contractor status-${agent.status}`}>
+                    <div className="agent-card-header">
+                      <div className="agent-card-identity">
+                        <span className={`agent-avatar ${archetypeFor(agent)}`} />
+                        <div>
+                          <span className="agent-name">{agent.name}</span>
+                          <span className="agent-role">contractor</span>
+                        </div>
+                      </div>
+                      <div className="agent-status-wrap">
+                        <span className={`status-dot ${agent.status}`} />
+                        <span className="status-label">{agent.status}</span>
                       </div>
                     </div>
-                    <div className="agent-status-wrap">
-                      <span className={`status-dot ${agent.status}`} />
-                      <span className="status-label">{agent.status}</span>
+                    <div className="agent-card-meta">
+                      <span className="tag time">{timeAgo(agent.lastActivity)}</span>
                     </div>
                   </div>
-                  <div className="agent-card-meta">
-                    <span className="tag time">{timeAgo(agent.lastActivity)}</span>
-                  </div>
-                </div>
+                ))}
+              </>
+            )}
+          </section>
+
+          <section className="bridge-meta">
+            <h2>Bridge</h2>
+            <p className="bridge-url">{bridgeUrl}</p>
+            <p className="bridge-updated">Last update: {formatTime(snapshot.stats.updatedAt)}</p>
+          </section>
+
+          <section className="event-log">
+            <h2>Recent Events</h2>
+            <ul className="event-log-list">
+              {snapshot.events.slice(0, 12).map((event) => (
+                <li key={event.id}>
+                  <time>{formatTime(event.timestamp)}</time>
+                  <span>{event.message}</span>
+                </li>
               ))}
-            </>
-          )}
-        </section>
-
-        <section className="bridge-meta">
-          <h2>Bridge</h2>
-          <p>{bridgeUrl}</p>
-          <p>Last update: {formatTime(snapshot.stats.updatedAt)}</p>
-        </section>
-
-        <section className="event-log">
-          <h2>Recent Events</h2>
-          <ul>
-            {snapshot.events.slice(0, 12).map((event) => (
-              <li key={event.id}>
-                <time>{formatTime(event.timestamp)}</time>
-                <span>{event.message}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+            </ul>
+          </section>
+        </div>
       </aside>
     </div>
   );
