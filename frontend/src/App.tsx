@@ -63,7 +63,7 @@ export default function App(): JSX.Element {
         <div className="pane-header">
           <div>
             <h1 className="dashboard-title">OpenClaw Agent Viz</h1>
-            <p className="dashboard-subtitle">Operational command deck</p>
+            <p className="dashboard-subtitle">Cozy warm operations office</p>
           </div>
           <span className={`connection-pill ${connectionState}`}>{connectionState}</span>
         </div>

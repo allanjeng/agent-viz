@@ -11,7 +11,7 @@
     "dev:bridge": "npm run dev --workspace bridge",
     "dev:frontend": "npm run dev --workspace frontend",
     "build": "npm run build --workspace bridge && npm run build --workspace frontend",
-    "import:vendor": "python3 scripts/import_vendor_assets.py"
+    "import:free": "python3 scripts/import_free_assets.py"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"

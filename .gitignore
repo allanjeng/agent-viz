@@ -13,3 +13,10 @@ assets/vendor/cozy-furniture/*
 !assets/vendor/cozy-furniture/.gitkeep
 frontend/public/assets/vendor/*
 !frontend/public/assets/vendor/.gitkeep
+
+# Local unpacked debug/raw source helpers
+assets-raw/
+assets/free-sources/_debug/
+assets/free-sources/opengameart/warped-tech-lab/extracted/__MACOSX/
+assets/free-sources/opengameart/warped-tech-lab/extracted/Top Down Lab files/previews/
+assets/free-sources/opengameart/warped-tech-lab/extracted/Top Down Lab files/aseprite-file.ase
