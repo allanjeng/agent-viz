@@ -24,14 +24,18 @@ interface InvokeResponse {
   };
 }
 
-const AGENT_MAP: Record<string, string> = {
-  main: "Nexus",
-  pivot: "Pivot",
-  aegis: "Aegis",
-  researcher: "Researcher",
+const AGENT_MAP: Record<string, { id: string; name: string }> = {
+  main: { id: "nexus", name: "Nexus" },
+  pivot: { id: "pivot", name: "Pivot" },
+  aegis: { id: "aegis", name: "Aegis" },
+  researcher: { id: "researcher", name: "Researcher" },
 };
 
-const PERSISTENT_IDS = new Set(Object.keys(AGENT_MAP));
+const PERSISTENT_SOURCE_IDS = new Set(Object.keys(AGENT_MAP));
+const PERSISTENT_DISPLAY_IDS = new Set(
+  Object.values(AGENT_MAP).map(({ id }) => id),
+);
+const DEFAULT_PERSISTENT_ID = AGENT_MAP.main.id;
 const CONTRACTOR_KIND_MAP = {
   codex: "Codex",
   claude: "Claude",
@@ -84,6 +88,10 @@ function deriveStatus(sessions: GatewaySession[]): AgentStatus {
   return "idle";
 }
 
+function toPersistentDisplayId(sourceId: string): string | null {
+  return AGENT_MAP[sourceId]?.id ?? null;
+}
+
 function parseContractorSessionKey(sessionKey: string): {
   id: string;
   name: string;
@@ -99,9 +107,11 @@ function parseContractorSessionKey(sessionKey: string): {
   const short = uuid.slice(0, 8);
   const title = CONTRACTOR_KIND_MAP[kind];
 
-  // Some keys may embed the spawning persistent ID; default to main.
+  // Some keys may embed the spawning persistent ID; default to Nexus.
   const parentMatch = sessionKey.match(/:(main|pivot|aegis|researcher)(?::|$)/);
-  const parentId = parentMatch?.[1] ?? "main";
+  const parentSourceId = parentMatch?.[1] ?? "main";
+  const parentId =
+    toPersistentDisplayId(parentSourceId) ?? DEFAULT_PERSISTENT_ID;
 
   return {
     id: sessionKey,
@@ -187,9 +197,11 @@ export class GatewaySource {
     // Build connection map: agents sharing the same Discord channel
     const channelAgents = new Map<string, Set<string>>();
     for (const s of sessions) {
-      const agentId = extractAgentId(s.key);
+      const sourceAgentId = extractAgentId(s.key);
       const channelId = extractChannelId(s.key);
-      if (!agentId || !channelId || !PERSISTENT_IDS.has(agentId)) continue;
+      if (!sourceAgentId || !channelId || !PERSISTENT_SOURCE_IDS.has(sourceAgentId)) continue;
+      const agentId = toPersistentDisplayId(sourceAgentId);
+      if (!agentId) continue;
       const set = channelAgents.get(channelId) ?? new Set();
       set.add(agentId);
       channelAgents.set(channelId, set);
@@ -231,8 +243,8 @@ export class GatewaySource {
     }
 
     // Upsert persistent agents
-    for (const [agentId, name] of Object.entries(AGENT_MAP)) {
-      const sessionsForAgent = agentSessions.get(agentId) ?? [];
+    for (const [sourceId, { id: agentId, name }] of Object.entries(AGENT_MAP)) {
+      const sessionsForAgent = agentSessions.get(sourceId) ?? [];
       const status = deriveStatus(sessionsForAgent);
       const totalTokens = sessionsForAgent.reduce(
         (sum, s) => sum + (s.totalTokens ?? 0),
@@ -282,9 +294,9 @@ export class GatewaySource {
       const mostRecent = contractor.sessions.sort(
         (a, b) => b.updatedAt - a.updatedAt,
       )[0];
-      const parentId = PERSISTENT_IDS.has(contractor.parentId)
+      const parentId = PERSISTENT_DISPLAY_IDS.has(contractor.parentId)
         ? contractor.parentId
-        : "main";
+        : DEFAULT_PERSISTENT_ID;
 
       const agent: AgentState = {
         id: contractor.id,
