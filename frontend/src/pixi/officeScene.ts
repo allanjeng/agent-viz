@@ -2,7 +2,6 @@ import {
   Application,
   Assets,
   Container,
-  Graphics,
   Sprite,
   Text,
   Texture,
@@ -34,6 +33,62 @@ const PERSISTENT_LABELS: Record<string, string> = {
   researcher: "Researcher",
 };
 
+type WorkstationProfile = {
+  zoneTile: string;
+  deskTile: string;
+  chairTile: string;
+  props: Array<{ x: number; y: number; tile: string }>;
+};
+
+const WORKSTATIONS: Record<string, WorkstationProfile> = {
+  nexus: {
+    zoneTile: "zone_nexus",
+    deskTile: "desk_nexus",
+    chairTile: "chair_nexus",
+    props: [
+      { x: 2, y: 3, tile: "prop_monitor_stack" },
+      { x: 7, y: 3, tile: "prop_server_rack" },
+    ],
+  },
+  pivot: {
+    zoneTile: "zone_pivot",
+    deskTile: "desk_pivot",
+    chairTile: "chair_pivot",
+    props: [
+      { x: 12, y: 3, tile: "prop_chart_board" },
+      { x: 14, y: 4, tile: "prop_temp_terminal" },
+    ],
+  },
+  aegis: {
+    zoneTile: "zone_aegis",
+    deskTile: "desk_aegis",
+    chairTile: "chair_aegis",
+    props: [
+      { x: 2, y: 9, tile: "prop_shield_node" },
+      { x: 7, y: 10, tile: "prop_server_rack" },
+    ],
+  },
+  researcher: {
+    zoneTile: "zone_researcher",
+    deskTile: "desk_researcher",
+    chairTile: "chair_researcher",
+    props: [
+      { x: 12, y: 9, tile: "prop_book_stack" },
+      { x: 14, y: 10, tile: "prop_book_stack" },
+    ],
+  },
+};
+
+const CONTRACTOR_PROPS: Array<{ x: number; y: number; tile: string }> = [
+  { x: 18, y: 3, tile: "prop_temp_terminal" },
+  { x: 23, y: 3, tile: "prop_temp_terminal" },
+  { x: 18, y: 6, tile: "prop_temp_terminal" },
+  { x: 23, y: 6, tile: "prop_temp_terminal" },
+  { x: 18, y: 9, tile: "prop_temp_terminal" },
+  { x: 23, y: 9, tile: "prop_temp_terminal" },
+  { x: 25, y: 12, tile: "prop_server_rack" },
+];
+
 type AgentVisual = {
   agent: AgentState;
   container: Container;
@@ -57,8 +112,6 @@ export class OfficeScene {
   private app: Application | null = null;
 
   private backgroundLayer: Container | null = null;
-
-  private connectionLayer: Graphics | null = null;
 
   private agentLayer: Container | null = null;
 
@@ -109,7 +162,7 @@ export class OfficeScene {
       width: OFFICE_WIDTH_TILES * TILE_SIZE,
       height: OFFICE_HEIGHT_TILES * TILE_SIZE,
       antialias: false,
-      background: 0x7a8c85,
+      background: 0x0d1117,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
     });
@@ -123,17 +176,14 @@ export class OfficeScene {
     this.host.appendChild(app.canvas as HTMLCanvasElement);
 
     const backgroundLayer = new Container();
-    const connectionLayer = new Graphics();
     const agentLayer = new Container();
     agentLayer.sortableChildren = true;
 
     app.stage.addChild(backgroundLayer);
-    app.stage.addChild(connectionLayer);
     app.stage.addChild(agentLayer);
 
     this.app = app;
     this.backgroundLayer = backgroundLayer;
-    this.connectionLayer = connectionLayer;
     this.agentLayer = agentLayer;
 
     const [agentSheet, tileSheet] = await Promise.all([
@@ -165,60 +215,92 @@ export class OfficeScene {
 
     for (let tileY = 0; tileY < OFFICE_HEIGHT_TILES; tileY += 1) {
       for (let tileX = 0; tileX < OFFICE_WIDTH_TILES; tileX += 1) {
-        const floor = new Sprite(this.tile("floor"));
-        floor.x = tileX * TILE_SIZE;
-        floor.y = tileY * TILE_SIZE;
-        this.backgroundLayer.addChild(floor);
+        let floorTile = (tileX + tileY) % 2 === 0 ? "floor_dark" : "floor_alt";
+
+        if (tileY === 8 && tileX > 1 && tileX < OFFICE_WIDTH_TILES - 1) {
+          floorTile = "floor_grid";
+        }
+
+        if (tileX >= 17 && tileY >= 2 && tileY <= 14 && tileX % 2 === 0) {
+          floorTile = "floor_grid";
+        }
+
+        this.placeTile(floorTile, tileX, tileY);
       }
     }
 
     for (let tileX = 0; tileX < OFFICE_WIDTH_TILES; tileX += 1) {
-      const topWall = new Sprite(this.tile("wall"));
-      topWall.x = tileX * TILE_SIZE;
-      topWall.y = 0;
-      this.backgroundLayer.addChild(topWall);
-
-      const bottomWall = new Sprite(this.tile("wall"));
-      bottomWall.x = tileX * TILE_SIZE;
-      bottomWall.y = (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE;
-      this.backgroundLayer.addChild(bottomWall);
+      this.placeTile(tileX % 3 === 0 ? "wall_neon" : "wall_dark", tileX, 0);
+      this.placeTile("wall_dark", tileX, OFFICE_HEIGHT_TILES - 1);
     }
 
     for (let tileY = 1; tileY < OFFICE_HEIGHT_TILES - 1; tileY += 1) {
-      const leftWall = new Sprite(this.tile("wall"));
-      leftWall.x = 0;
-      leftWall.y = tileY * TILE_SIZE;
-      this.backgroundLayer.addChild(leftWall);
-
-      const rightWall = new Sprite(this.tile("wall"));
-      rightWall.x = (OFFICE_WIDTH_TILES - 1) * TILE_SIZE;
-      rightWall.y = tileY * TILE_SIZE;
-      this.backgroundLayer.addChild(rightWall);
+      this.placeTile("wall_dark", 0, tileY);
+      this.placeTile("wall_dark", OFFICE_WIDTH_TILES - 1, tileY);
     }
 
-    const rug = new Sprite(this.tile("rug"));
-    rug.x = 14 * TILE_SIZE;
-    rug.y = 7 * TILE_SIZE;
-    this.backgroundLayer.addChild(rug);
+    for (const [id, desk] of Object.entries(PERSISTENT_DESKS)) {
+      const station = WORKSTATIONS[id];
+      if (!station) {
+        continue;
+      }
 
-    const allDesks = [...Object.values(PERSISTENT_DESKS), ...CONTRACTOR_DESKS];
+      this.paintZone(desk.x - 1, desk.y - 1, 4, 4, station.zoneTile);
+      this.placeTile(station.deskTile, desk.x, desk.y);
+      this.placeTile(station.chairTile, desk.x, desk.y + 1);
 
-    for (const desk of allDesks) {
-      const deskSprite = new Sprite(this.tile("desk"));
-      deskSprite.x = desk.x * TILE_SIZE;
-      deskSprite.y = desk.y * TILE_SIZE;
-      this.backgroundLayer.addChild(deskSprite);
-
-      const chairSprite = new Sprite(this.tile("chair"));
-      chairSprite.x = desk.x * TILE_SIZE;
-      chairSprite.y = (desk.y + 1) * TILE_SIZE;
-      this.backgroundLayer.addChild(chairSprite);
+      for (const prop of station.props) {
+        this.placeTile(prop.tile, prop.x, prop.y);
+      }
     }
 
-    const door = new Sprite(this.tile("door"));
-    door.x = (OFFICE_WIDTH_TILES - 1) * TILE_SIZE;
-    door.y = (OFFICE_HEIGHT_TILES - 2) * TILE_SIZE;
-    this.backgroundLayer.addChild(door);
+    this.paintZone(17, 3, 10, 10, "zone_contract");
+
+    for (const desk of CONTRACTOR_DESKS) {
+      this.placeTile("desk_contract", desk.x, desk.y);
+      this.placeTile("chair_contract", desk.x, desk.y + 1);
+    }
+
+    for (const prop of CONTRACTOR_PROPS) {
+      this.placeTile(prop.tile, prop.x, prop.y);
+    }
+
+    this.placeTile("prop_server_rack", 25, 2);
+    this.placeTile("prop_chart_board", 20, 13);
+    this.placeTile("prop_monitor_stack", 9, 1);
+
+    this.placeTile("door", OFFICE_WIDTH_TILES - 1, OFFICE_HEIGHT_TILES - 2);
+  }
+
+  private placeTile(tileName: string, tileX: number, tileY: number): void {
+    if (!this.backgroundLayer) {
+      return;
+    }
+
+    const sprite = new Sprite(this.tile(tileName));
+    sprite.x = tileX * TILE_SIZE;
+    sprite.y = tileY * TILE_SIZE;
+    this.backgroundLayer.addChild(sprite);
+  }
+
+  private paintZone(startX: number, startY: number, width: number, height: number, tileName: string): void {
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const tileX = startX + x;
+        const tileY = startY + y;
+
+        if (
+          tileX <= 0 ||
+          tileY <= 0 ||
+          tileX >= OFFICE_WIDTH_TILES - 1 ||
+          tileY >= OFFICE_HEIGHT_TILES - 1
+        ) {
+          continue;
+        }
+
+        this.placeTile(tileName, tileX, tileY);
+      }
+    }
   }
 
   private syncAgents(agents: AgentState[]): void {
@@ -293,8 +375,8 @@ export class OfficeScene {
     const labelShadow = new Text({
       text: this.labelFor(agent),
       style: {
-        fill: 0x111111,
-        fontFamily: "'Press Start 2P', 'Courier New', monospace",
+        fill: 0x05070b,
+        fontFamily: "'JetBrains Mono', 'Fira Mono', monospace",
         fontSize: 8,
         fontWeight: "700",
       },
@@ -307,8 +389,8 @@ export class OfficeScene {
     const label = new Text({
       text: this.labelFor(agent),
       style: {
-        fill: 0xffffff,
-        fontFamily: "'Press Start 2P', 'Courier New', monospace",
+        fill: 0xc9d1d9,
+        fontFamily: "'JetBrains Mono', 'Fira Mono', monospace",
         fontSize: 8,
         fontWeight: "700",
       },
@@ -347,7 +429,7 @@ export class OfficeScene {
   }
 
   private readonly tick = (ticker: Ticker): void => {
-    if (!this.agentLayer || !this.connectionLayer) {
+    if (!this.agentLayer) {
       return;
     }
 
@@ -376,16 +458,16 @@ export class OfficeScene {
 
       visual.sprite.tint =
         visual.agent.status === "error" && Math.floor((now + visual.phase) * 8) % 2 === 0
-          ? 0xff7a7a
+          ? 0xff8b8b
           : 0xffffff;
 
       let bob = 0;
       if (moving && visual.agent.type === "contractor") {
         bob = Math.sin((now + visual.phase) * 16) * 1.6;
       } else if (visual.agent.status === "working") {
-        bob = Math.sin((now + visual.phase) * 12) * 2.5;
+        bob = Math.sin((now + visual.phase) * 12) * 2.2;
       } else if (visual.agent.status === "thinking") {
-        bob = Math.sin((now + visual.phase) * 8) * 1.4;
+        bob = Math.sin((now + visual.phase) * 8) * 1.2;
       }
 
       if (visual.alpha !== visual.targetAlpha) {
@@ -411,8 +493,6 @@ export class OfficeScene {
         this.removeVisual(id);
       }
     }
-
-    this.drawConnections();
   };
 
   private removeVisual(id: string): void {
@@ -424,47 +504,6 @@ export class OfficeScene {
     visual.container.removeFromParent();
     visual.container.destroy({ children: true });
     this.visuals.delete(id);
-  }
-
-  private drawConnections(): void {
-    if (!this.connectionLayer) {
-      return;
-    }
-
-    this.connectionLayer.clear();
-
-    const renderedPairs = new Set<string>();
-
-    for (const visual of this.visuals.values()) {
-      if (visual.despawning) {
-        continue;
-      }
-
-      for (const connectionId of visual.agent.connections) {
-        const target = this.visuals.get(connectionId);
-        if (!target || target.despawning) {
-          continue;
-        }
-
-        const pairKey = visual.agent.id < connectionId
-          ? `${visual.agent.id}|${connectionId}`
-          : `${connectionId}|${visual.agent.id}`;
-
-        if (renderedPairs.has(pairKey)) {
-          continue;
-        }
-
-        renderedPairs.add(pairKey);
-
-        this.connectionLayer.moveTo(visual.x, visual.y - 20);
-        this.connectionLayer.lineTo(target.x, target.y - 20);
-        this.connectionLayer.stroke({
-          color: 0x66d9ff,
-          width: 2,
-          alpha: 0.8,
-        });
-      }
-    }
   }
 
   private claimContractorSlot(agentId: string): number | null {

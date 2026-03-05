@@ -1,5 +1,6 @@
 import { OfficeCanvas } from "./components/OfficeCanvas";
 import { useBridgeState } from "./hooks/useBridgeState";
+import { AgentState } from "./types";
 
 function formatTime(isoTime: string): string {
   const timestamp = new Date(isoTime);
@@ -16,7 +17,7 @@ function formatTime(isoTime: string): string {
 }
 
 function formatTokens(n?: number): string {
-  if (n == null || n === 0) return "—";
+  if (n == null || n === 0) return "-";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
@@ -31,6 +32,25 @@ function timeAgo(iso?: string): string {
   return `${Math.floor(ms / 86_400_000)}d ago`;
 }
 
+function archetypeFor(agent: AgentState): string {
+  if (agent.type === "persistent") {
+    if (agent.id === "nexus" || agent.id === "pivot" || agent.id === "aegis" || agent.id === "researcher") {
+      return agent.id;
+    }
+    return "nexus";
+  }
+
+  if (agent.id.startsWith("claude-")) {
+    return "claude";
+  }
+
+  if (agent.id.startsWith("gemini-")) {
+    return "gemini";
+  }
+
+  return "codex";
+}
+
 export default function App(): JSX.Element {
   const { snapshot, connectionState, bridgeUrl } = useBridgeState();
 
@@ -41,7 +61,10 @@ export default function App(): JSX.Element {
     <div className="dashboard-shell">
       <main className="office-pane">
         <div className="pane-header">
-          <h1>OpenClaw Agent Viz</h1>
+          <div>
+            <h1 className="dashboard-title">OpenClaw Agent Viz</h1>
+            <p className="dashboard-subtitle">Operational command deck</p>
+          </div>
           <span className={`connection-pill ${connectionState}`}>{connectionState}</span>
         </div>
         <OfficeCanvas agents={snapshot.agents} />
@@ -68,8 +91,17 @@ export default function App(): JSX.Element {
           {persistent.map((agent) => (
             <div key={agent.id} className={`agent-card status-${agent.status}`}>
               <div className="agent-card-header">
-                <span className="agent-name">{agent.name}</span>
-                <span className={`status-dot ${agent.status}`} />
+                <div className="agent-card-identity">
+                  <span className={`agent-avatar ${archetypeFor(agent)}`} />
+                  <div>
+                    <span className="agent-name">{agent.name}</span>
+                    <span className="agent-role">persistent</span>
+                  </div>
+                </div>
+                <div className="agent-status-wrap">
+                  <span className={`status-dot ${agent.status}`} />
+                  <span className="status-label">{agent.status}</span>
+                </div>
               </div>
               <div className="agent-card-meta">
                 {agent.model && <span className="tag model">{agent.model}</span>}
@@ -85,8 +117,17 @@ export default function App(): JSX.Element {
               {contractors.map((agent) => (
                 <div key={agent.id} className={`agent-card contractor status-${agent.status}`}>
                   <div className="agent-card-header">
-                    <span className="agent-name">{agent.name}</span>
-                    <span className={`status-dot ${agent.status}`} />
+                    <div className="agent-card-identity">
+                      <span className={`agent-avatar ${archetypeFor(agent)}`} />
+                      <div>
+                        <span className="agent-name">{agent.name}</span>
+                        <span className="agent-role">contractor</span>
+                      </div>
+                    </div>
+                    <div className="agent-status-wrap">
+                      <span className={`status-dot ${agent.status}`} />
+                      <span className="status-label">{agent.status}</span>
+                    </div>
                   </div>
                   <div className="agent-card-meta">
                     <span className="tag time">{timeAgo(agent.lastActivity)}</span>
