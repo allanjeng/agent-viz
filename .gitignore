@@ -5,3 +5,11 @@ dist
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# Local vendor assets (licensed third-party)
+assets/vendor/donarg/*
+!assets/vendor/donarg/.gitkeep
+assets/vendor/cozy-furniture/*
+!assets/vendor/cozy-furniture/.gitkeep
+frontend/public/assets/vendor/*
+!frontend/public/assets/vendor/.gitkeep

@@ -20,6 +20,12 @@ import {
   TilePoint,
 } from "./layout";
 import { AgentState, AgentStatus } from "../types";
+import { CONTRACTOR_THEME, OFFICE_PALETTE, PERSISTENT_THEMES } from "./theme";
+import {
+  VendorFurnitureAtlas,
+  VendorFurnitureCategory,
+  loadVendorFurnitureAtlas,
+} from "./vendorFurniture";
 
 type Archetype = "nexus" | "pivot" | "aegis" | "researcher" | "codex" | "claude" | "gemini";
 type CharacterDirection = "down" | "up" | "right" | "left";
@@ -32,26 +38,7 @@ const CHARACTER_FRAME_HEIGHT = 32;
 const CHARACTER_SCALE = 3;
 const FLOOR_TILE_SIZE = 16;
 
-const PALETTE = {
-  backgroundTop: 0x1f1410,
-  backgroundBottom: 0x2b1d17,
-  floorA: 0x2e1f18,
-  floorB: 0x3a271f,
-  panelA: 0x251814,
-  panelB: 0x2d1f19,
-  border: 0x5a3b2f,
-  text: 0xf5e6d8,
-  muted: 0xc9aa92,
-  nexus: 0xf59e0b,
-  nexusBrass: 0xd97706,
-  pivot: 0x84a545,
-  pivotGold: 0xc9a227,
-  aegis: 0xe11d48,
-  aegisRed: 0xbe123c,
-  researcher: 0xb794f4,
-  researcherPaper: 0xe8d8b0,
-  contractor: 0xc47f3a,
-};
+const PALETTE = OFFICE_PALETTE;
 
 const PERSISTENT_LABELS: Record<string, string> = {
   nexus: "Nexus",
@@ -68,35 +55,6 @@ const CHARACTER_SHEET_PATHS: Record<Archetype, string> = {
   codex: "/assets/characters/char_2.png",
   claude: "/assets/characters/char_5.png",
   gemini: "/assets/characters/char_5.png",
-};
-
-const PERSISTENT_THEMES: Record<string, { desk: number; accent: number; chair: number }> = {
-  nexus: {
-    desk: 0x3f2a1e,
-    accent: PALETTE.nexusBrass,
-    chair: 0x2f2119,
-  },
-  pivot: {
-    desk: 0x3a3522,
-    accent: PALETTE.pivotGold,
-    chair: 0x2c281b,
-  },
-  aegis: {
-    desk: 0x3f2227,
-    accent: PALETTE.aegisRed,
-    chair: 0x30191f,
-  },
-  researcher: {
-    desk: 0x3a2a3d,
-    accent: PALETTE.researcher,
-    chair: 0x2d2130,
-  },
-};
-
-const CONTRACTOR_THEME = {
-  desk: 0x3f2b20,
-  accent: PALETTE.contractor,
-  chair: 0x2f221b,
 };
 
 type AgentVisual = {
@@ -127,6 +85,8 @@ export class OfficeScene {
   private agentLayer: Container | null = null;
 
   private characterFrames = new Map<Archetype, CharacterFrames>();
+
+  private vendorFurniture: VendorFurnitureAtlas | null = null;
 
   private visuals = new Map<string, AgentVisual>();
 
@@ -201,6 +161,8 @@ export class OfficeScene {
         this.loadCharacterSheet(archetype, path),
       ),
     );
+
+    this.vendorFurniture = await loadVendorFurnitureAtlas();
 
     if (this.destroyed) {
       return;
@@ -284,6 +246,8 @@ export class OfficeScene {
       this.drawDesk(desk, CONTRACTOR_THEME.desk, CONTRACTOR_THEME.accent);
       this.drawChair({ x: desk.x, y: desk.y + 1 }, CONTRACTOR_THEME.chair);
     }
+
+    this.drawVendorAmbientDecor();
   }
 
   private addRect(
@@ -480,6 +444,10 @@ export class OfficeScene {
   }
 
   private drawDesk(tile: TilePoint, deskColor: number, accentColor: number): void {
+    if (this.drawVendorDesk(tile)) {
+      return;
+    }
+
     const x = tile.x * TILE_SIZE + 2;
     const y = tile.y * TILE_SIZE + 8;
 
@@ -494,12 +462,91 @@ export class OfficeScene {
   }
 
   private drawChair(tile: TilePoint, seatColor: number): void {
+    if (this.drawVendorChair(tile)) {
+      return;
+    }
+
     const x = tile.x * TILE_SIZE + 8;
     const y = tile.y * TILE_SIZE + 10;
 
     this.addRect(x, y, 16, 10, seatColor);
     this.addRect(x + 2, y - 4, 12, 4, 0x3b2a22);
     this.addRect(x + 7, y + 10, 2, 6, 0x2a1c14);
+  }
+
+  private drawVendorDesk(tile: TilePoint): boolean {
+    const originX = tile.x * TILE_SIZE;
+    const originY = tile.y * TILE_SIZE - 8;
+    const seed = this.tileSeed(tile.x, tile.y, 1);
+
+    if (!this.drawVendorFurnitureTile("desks", originX, originY, seed)) {
+      return false;
+    }
+
+    this.drawVendorFurnitureTile("monitors", originX + 8, originY - 10, seed + 11);
+    return true;
+  }
+
+  private drawVendorChair(tile: TilePoint): boolean {
+    const originX = tile.x * TILE_SIZE;
+    const originY = tile.y * TILE_SIZE - 2;
+    const seed = this.tileSeed(tile.x, tile.y, 2);
+    return this.drawVendorFurnitureTile("chairs", originX, originY, seed);
+  }
+
+  private drawVendorAmbientDecor(): void {
+    if (!this.vendorFurniture) {
+      return;
+    }
+
+    const placements: Array<{ category: VendorFurnitureCategory; x: number; y: number; salt: number }> = [
+      { category: "shelves", x: 2, y: 1, salt: 31 },
+      { category: "shelves", x: 12, y: 1, salt: 32 },
+      { category: "plants", x: 7, y: 2, salt: 33 },
+      { category: "lamps", x: 9, y: 2, salt: 34 },
+      { category: "decor", x: 3, y: 14, salt: 35 },
+      { category: "decor", x: 14, y: 14, salt: 36 },
+      { category: "plants", x: 17, y: 14, salt: 37 },
+      { category: "lamps", x: 25, y: 14, salt: 38 },
+      { category: "shelves", x: 25, y: 2, salt: 39 },
+      { category: "decor", x: 20, y: 2, salt: 40 },
+    ];
+
+    for (const placement of placements) {
+      const px = placement.x * TILE_SIZE;
+      const py = placement.y * TILE_SIZE;
+      const seed = this.tileSeed(placement.x, placement.y, placement.salt);
+      this.drawVendorFurnitureTile(placement.category, px, py, seed, 0.95);
+    }
+  }
+
+  private drawVendorFurnitureTile(
+    category: VendorFurnitureCategory,
+    x: number,
+    y: number,
+    seed: number,
+    alpha = 1,
+  ): boolean {
+    if (!this.vendorFurniture || !this.backgroundLayer) {
+      return false;
+    }
+
+    const textures = this.vendorFurniture.categories[category];
+    if (!textures || textures.length === 0) {
+      return false;
+    }
+
+    const index = Math.abs(seed) % textures.length;
+    const sprite = new Sprite(textures[index]);
+    sprite.x = Math.round(x);
+    sprite.y = Math.round(y);
+    sprite.alpha = alpha;
+    this.backgroundLayer.addChild(sprite);
+    return true;
+  }
+
+  private tileSeed(x: number, y: number, salt: number): number {
+    return ((x + 17) * 73856093) ^ ((y + 29) * 19349663) ^ (salt * 83492791);
   }
 
   private syncAgents(agents: AgentState[]): void {

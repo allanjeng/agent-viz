@@ -25,6 +25,35 @@ Local ports:
 - `npm run dev:bridge` run bridge only
 - `npm run dev:frontend` run frontend only
 - `npm run build` build both workspaces
+- `npm run import:vendor` import/normalize Donarg + Cozy paid tilesets into frontend runtime atlas
+
+## Vendor Asset Setup (Donarg + Cozy)
+
+1. Put paid source files in:
+- `assets/vendor/donarg/`
+- `assets/vendor/cozy-furniture/`
+
+2. Expected source filenames:
+- `assets/vendor/donarg/Donarg-Office-Tileset.zip` or `assets/vendor/donarg/donarg-office-tileset.png`
+- `assets/vendor/cozy-furniture/Cozy-Furniture.zip` or `assets/vendor/cozy-furniture/cozy-furniture-tileset.png`
+
+3. Run importer:
+
+```bash
+npm run import:vendor
+```
+
+4. Generated runtime files:
+- `frontend/public/assets/vendor/furniture.png`
+- `frontend/public/assets/vendor/furniture.json`
+
+If vendor assets are not present, the scene automatically falls back to built-in procedural desks/chairs/props.
+
+For detailed drop-zone instructions, see `assets/vendor/README.md`.
+
+## Legal Note
+
+Do not commit licensed third-party source files or derived vendor atlases unless your license explicitly allows redistribution.
 
 ## Bridge Data Contract
 
