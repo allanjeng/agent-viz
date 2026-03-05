@@ -32,6 +32,22 @@ const CHARACTER_FRAME_HEIGHT = 32;
 const CHARACTER_SCALE = 3;
 const FLOOR_TILE_SIZE = 16;
 
+const PALETTE = {
+  backgroundTop: 0x060912,
+  backgroundBottom: 0x0b1020,
+  floorA: 0x111827,
+  floorB: 0x0f172a,
+  panelA: 0x111827,
+  panelB: 0x0f172a,
+  border: 0x2a3448,
+  text: 0xe5e7eb,
+  nexus: 0x22d3ee,
+  pivot: 0x22c55e,
+  aegis: 0xf43f5e,
+  researcher: 0xa78bfa,
+  contractor: 0xf59e0b,
+};
+
 const PERSISTENT_LABELS: Record<string, string> = {
   nexus: "Nexus",
   pivot: "Pivot",
@@ -41,46 +57,41 @@ const PERSISTENT_LABELS: Record<string, string> = {
 
 const CHARACTER_SHEET_PATHS: Record<Archetype, string> = {
   nexus: "/assets/characters/char_0.png",
-  pivot: "/assets/characters/char_1.png",
-  aegis: "/assets/characters/char_2.png",
+  pivot: "/assets/characters/char_4.png",
+  aegis: "/assets/characters/char_1.png",
   researcher: "/assets/characters/char_3.png",
-  codex: "/assets/characters/char_4.png",
+  codex: "/assets/characters/char_2.png",
   claude: "/assets/characters/char_5.png",
   gemini: "/assets/characters/char_5.png",
 };
 
-const PERSISTENT_THEMES: Record<string, { zone: number; desk: number; accent: number; chair: number }> = {
+const PERSISTENT_THEMES: Record<string, { desk: number; accent: number; chair: number }> = {
   nexus: {
-    zone: 0x1a2734,
-    desk: 0x2c3f52,
-    accent: 0x69b2ff,
-    chair: 0x2a3c50,
+    desk: 0x1f2d3f,
+    accent: PALETTE.nexus,
+    chair: 0x1a2534,
   },
   pivot: {
-    zone: 0x2a2438,
-    desk: 0x4a3a5f,
-    accent: 0xd5a3ff,
-    chair: 0x413357,
+    desk: 0x223328,
+    accent: PALETTE.pivot,
+    chair: 0x1b2a21,
   },
   aegis: {
-    zone: 0x213033,
-    desk: 0x35545b,
-    accent: 0x77d8c0,
-    chair: 0x2d4a51,
+    desk: 0x35232a,
+    accent: PALETTE.aegis,
+    chair: 0x291b21,
   },
   researcher: {
-    zone: 0x2b2b36,
-    desk: 0x4e4b5f,
-    accent: 0x9fb0ff,
-    chair: 0x444059,
+    desk: 0x2b2541,
+    accent: PALETTE.researcher,
+    chair: 0x221d33,
   },
 };
 
 const CONTRACTOR_THEME = {
-  zone: 0x182733,
-  desk: 0x34495d,
-  accent: 0x7ec7ff,
-  chair: 0x2d4052,
+  desk: 0x2f313d,
+  accent: PALETTE.contractor,
+  chair: 0x252934,
 };
 
 type AgentVisual = {
@@ -156,7 +167,7 @@ export class OfficeScene {
       width: OFFICE_WIDTH_TILES * TILE_SIZE,
       height: OFFICE_HEIGHT_TILES * TILE_SIZE,
       antialias: false,
-      background: 0x0d1117,
+      background: PALETTE.backgroundTop,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
     });
@@ -210,63 +221,63 @@ export class OfficeScene {
     const floorCols = Math.ceil(widthPx / FLOOR_TILE_SIZE);
     const floorRows = Math.ceil(heightPx / FLOOR_TILE_SIZE);
 
-    this.addRect(0, 0, widthPx, heightPx, 0x0b1118);
+    this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundTop);
+
+    for (let band = 0; band < 8; band += 1) {
+      const alpha = 0.1 + band * 0.05;
+      const y = Math.floor((heightPx / 8) * band);
+      this.addRect(0, y, widthPx, Math.ceil(heightPx / 8) + 2, PALETTE.backgroundBottom, alpha);
+    }
 
     for (let y = 0; y < floorRows; y += 1) {
       for (let x = 0; x < floorCols; x += 1) {
-        let floorColor = (x + y) % 2 === 0 ? 0x111821 : 0x0f151d;
-
-        if ((x + y * 3) % 11 === 0) {
-          floorColor = 0x13202a;
-        }
-
-        if (y >= 15 && y <= 18) {
-          floorColor = x % 2 === 0 ? 0x16212c : 0x141d27;
-        }
-
-        if (x >= 34 && x <= 54 && y >= 4 && y <= 30 && x % 2 === 0) {
-          floorColor = 0x16242e;
-        }
-
+        const floorColor = (x + y) % 2 === 0 ? PALETTE.floorA : PALETTE.floorB;
         const px = x * FLOOR_TILE_SIZE;
         const py = y * FLOOR_TILE_SIZE;
 
-        this.addRect(px, py, FLOOR_TILE_SIZE, FLOOR_TILE_SIZE, floorColor);
+        this.addRect(px, py, FLOOR_TILE_SIZE, FLOOR_TILE_SIZE, floorColor, 0.93);
 
-        if ((x + y) % 4 === 0) {
-          this.addRect(px, py, FLOOR_TILE_SIZE, 1, 0x1d2b37, 0.28);
+        if ((x + y) % 3 === 0) {
+          this.addRect(px, py, FLOOR_TILE_SIZE, 1, PALETTE.border, 0.1);
         }
       }
     }
 
-    this.addRect(0, 0, widthPx, 16, 0x202d3a);
-    this.addRect(0, heightPx - 16, widthPx, 16, 0x1b2734);
-    this.addRect(0, 0, 16, heightPx, 0x1b2734);
-    this.addRect(widthPx - 16, 0, 16, heightPx, 0x1b2734);
-    this.addRect(16, 6, widthPx - 32, 2, 0x55a8ff, 0.45);
+    this.addRect(0, 0, widthPx, 16, PALETTE.panelB, 0.95);
+    this.addRect(0, heightPx - 16, widthPx, 16, PALETTE.panelB, 0.95);
+    this.addRect(0, 0, 16, heightPx, PALETTE.panelB, 0.95);
+    this.addRect(widthPx - 16, 0, 16, heightPx, PALETTE.panelB, 0.95);
+    this.addRect(16, 6, widthPx - 32, 2, PALETTE.border, 0.6);
+
+    this.drawZonePanel(1, 1, 8, 7, PALETTE.nexus);
+    this.drawNexusCommandCenter(1, 1, 8, 7);
+
+    this.drawZonePanel(8, 1, 8, 7, PALETTE.pivot);
+    this.drawPivotTradingStation(8, 1, 8, 7);
+
+    this.drawZonePanel(1, 8, 8, 8, PALETTE.aegis);
+    this.drawAegisSecurityStation(1, 8, 8, 8);
+
+    this.drawZonePanel(8, 8, 8, 8, PALETTE.researcher);
+    this.drawResearcherLibrary(8, 8, 8, 8);
+
+    this.drawZonePanel(17, 2, 10, 13, PALETTE.contractor);
+    this.drawContractorWorkstations(17, 2, 10, 13);
 
     const doorY = heightPx - TILE_SIZE * 2;
-    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x314659);
-    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, 0x7eb7ff, 0.28);
+    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x1f2a3a);
+    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, PALETTE.contractor, 0.34);
 
     for (const [id, desk] of Object.entries(PERSISTENT_DESKS)) {
       const theme = PERSISTENT_THEMES[id] ?? PERSISTENT_THEMES.nexus;
-      this.addRect(desk.x * TILE_SIZE - 20, desk.y * TILE_SIZE - 14, 72, 62, theme.zone, 0.42);
       this.drawDesk(desk, theme.desk, theme.accent);
       this.drawChair({ x: desk.x, y: desk.y + 1 }, theme.chair);
     }
-
-    this.addRect(17 * TILE_SIZE, 3 * TILE_SIZE, 10 * TILE_SIZE, 10 * TILE_SIZE, CONTRACTOR_THEME.zone, 0.42);
 
     for (const desk of CONTRACTOR_DESKS) {
       this.drawDesk(desk, CONTRACTOR_THEME.desk, CONTRACTOR_THEME.accent);
       this.drawChair({ x: desk.x, y: desk.y + 1 }, CONTRACTOR_THEME.chair);
     }
-
-    this.drawServerRack(25, 2);
-    this.drawServerRack(25, 12);
-    this.drawStatusBoard(20, 13, 0x58a6ff);
-    this.drawStatusBoard(9, 1, 0x8fbcff);
   }
 
   private addRect(
@@ -289,18 +300,163 @@ export class OfficeScene {
     return sprite;
   }
 
+  private drawZonePanel(tileX: number, tileY: number, widthTiles: number, heightTiles: number, accent: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
+
+    this.addRect(x, y, width, height, PALETTE.panelA, 0.72);
+    this.addRect(x + 2, y + 2, width - 4, height - 4, PALETTE.panelB, 0.68);
+    this.addRect(x, y, width, 2, PALETTE.border, 0.95);
+    this.addRect(x, y + height - 2, width, 2, PALETTE.border, 0.95);
+    this.addRect(x, y, 2, height, PALETTE.border, 0.95);
+    this.addRect(x + width - 2, y, 2, height, PALETTE.border, 0.95);
+    this.addRect(x + 6, y + 6, width - 12, 2, accent, 0.34);
+    this.addRect(x + 6, y + height - 8, width - 12, 2, accent, 0.2);
+  }
+
+  private drawNexusCommandCenter(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
+
+    for (let row = 0; row < 2; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        const sx = x + 16 + col * 44;
+        const sy = y + 18 + row * 30;
+        this.addRect(sx, sy, 36, 20, 0x0b1320);
+        this.addRect(sx + 2, sy + 2, 32, 16, PALETTE.nexus, 0.25);
+        this.addRect(sx + 4, sy + 5, 28, 2, PALETTE.nexus, 0.75);
+        this.addRect(sx + 4, sy + 10, 19, 2, PALETTE.nexus, 0.42);
+        this.addRect(sx + 4, sy + 14, 24, 1, PALETTE.nexus, 0.3);
+      }
+    }
+
+    this.addRect(x + width - 48, y + 16, 28, height - 36, 0x101b2b);
+    for (let i = 0; i < 7; i += 1) {
+      this.addRect(x + width - 44, y + 22 + i * 20, 20, 2, PALETTE.nexus, 0.4);
+    }
+  }
+
+  private drawPivotTradingStation(tileX: number, tileY: number, widthTiles: number, _heightTiles: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+
+    this.addRect(x + 12, y + 18, 92, 30, 0x0d1a13);
+    this.addRect(x + 14, y + 20, 88, 26, PALETTE.pivot, 0.18);
+    this.addRect(x + 16, y + 39, 16, 2, PALETTE.pivot, 0.55);
+    this.addRect(x + 34, y + 33, 14, 2, PALETTE.pivot, 0.8);
+    this.addRect(x + 50, y + 28, 14, 2, PALETTE.pivot, 0.75);
+    this.addRect(x + 66, y + 31, 14, 2, PALETTE.pivot, 0.7);
+    this.addRect(x + 82, y + 24, 14, 2, PALETTE.pivot, 0.78);
+
+    this.addRect(x + 110, y + 18, 116, 30, 0x0d1a13);
+    this.addRect(x + 112, y + 20, 112, 26, PALETTE.pivot, 0.16);
+
+    for (let i = 0; i < 6; i += 1) {
+      this.addRect(x + 117 + i * 18, y + 39 - i * 2, 14, 2, PALETTE.pivot, 0.72);
+    }
+
+    this.addRect(x + 12, y + 56, 214, 12, 0x112016);
+    for (let i = 0; i < 14; i += 1) {
+      this.addRect(x + 16 + i * 15, y + 60, 10, 2, PALETTE.pivot, i % 3 === 0 ? 0.7 : 0.35);
+    }
+  }
+
+  private drawAegisSecurityStation(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
+
+    this.addRect(x + 18, y + 18, 38, 38, 0x23121a);
+    this.addRect(x + 24, y + 24, 26, 20, PALETTE.aegis, 0.22);
+    this.addRect(x + 30, y + 20, 14, 8, PALETTE.aegis, 0.28);
+    this.addRect(x + 33, y + 23, 8, 7, 0x151922);
+    this.addRect(x + 31, y + 31, 12, 10, PALETTE.aegis, 0.62);
+
+    this.addRect(x + 74, y + 18, 38, 38, 0x23121a);
+    this.addRect(x + 84, y + 24, 18, 8, PALETTE.aegis, 0.28);
+    this.addRect(x + 80, y + 32, 26, 12, PALETTE.aegis, 0.58);
+    this.addRect(x + 84, y + 34, 18, 8, 0x151922);
+
+    this.addRect(x + width - 44, y + 20, 16, 16, PALETTE.aegis, 0.86);
+    this.addRect(x + width - 48, y + 16, 24, 24, PALETTE.aegis, 0.24);
+    this.addRect(x + width - 37, y + 27, 2, 2, 0xffffff, 0.8);
+
+    this.addRect(x + 14, y + height - 24, width - 28, 10, 0x24131b);
+    for (let i = 0; i < 8; i += 1) {
+      this.addRect(x + 20 + i * 28, y + height - 21, 18, 3, i % 2 === 0 ? PALETTE.aegis : 0x121821, 0.8);
+    }
+  }
+
+  private drawResearcherLibrary(tileX: number, tileY: number, widthTiles: number, _heightTiles: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+
+    this.addRect(x + 10, y + 14, 32, 96, 0x1a1727);
+    this.addRect(x + width - 42, y + 14, 32, 96, 0x1a1727);
+
+    for (let shelf = 0; shelf < 5; shelf += 1) {
+      const shelfY = y + 24 + shelf * 17;
+      this.addRect(x + 12, shelfY, 28, 2, PALETTE.researcher, 0.35);
+      this.addRect(x + width - 40, shelfY, 28, 2, PALETTE.researcher, 0.35);
+      for (let book = 0; book < 4; book += 1) {
+        this.addRect(x + 14 + book * 6, shelfY - 10, 4, 9, PALETTE.researcher, 0.25 + book * 0.1);
+        this.addRect(x + width - 38 + book * 6, shelfY - 10, 4, 9, PALETTE.researcher, 0.2 + book * 0.1);
+      }
+    }
+
+    this.addRect(x + 62, y + 22, 128, 52, 0x171425);
+    this.addRect(x + 64, y + 24, 124, 48, PALETTE.researcher, 0.12);
+    this.addRect(x + 72, y + 32, 36, 22, 0xd4d7e1);
+    this.addRect(x + 114, y + 38, 28, 18, 0xcfd3dc);
+    this.addRect(x + 150, y + 30, 30, 20, 0xdce0ea);
+    this.addRect(x + 74, y + 36, 30, 2, PALETTE.researcher, 0.4);
+    this.addRect(x + 116, y + 43, 24, 2, PALETTE.researcher, 0.35);
+    this.addRect(x + 152, y + 35, 24, 2, PALETTE.researcher, 0.36);
+  }
+
+  private drawContractorWorkstations(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
+    const x = tileX * TILE_SIZE;
+    const y = tileY * TILE_SIZE;
+    const width = widthTiles * TILE_SIZE;
+    const height = heightTiles * TILE_SIZE;
+
+    for (let row = 0; row < 3; row += 1) {
+      const rowY = y + 32 + row * 96;
+      this.addRect(x + 14, rowY, width - 28, 12, 0x1a202e);
+      this.addRect(x + 14, rowY, width - 28, 2, PALETTE.contractor, 0.45);
+
+      for (let seat = 0; seat < 3; seat += 1) {
+        const seatX = x + 26 + seat * 86;
+        this.addRect(seatX, rowY - 18, 24, 16, 0x151d2a);
+        this.addRect(seatX + 2, rowY - 16, 20, 12, PALETTE.contractor, 0.24);
+        this.addRect(seatX + 4, rowY - 10, 16, 2, PALETTE.contractor, 0.56);
+      }
+    }
+
+    this.addRect(x + width - 38, y + 14, 18, height - 28, 0x1d2028);
+    for (let i = 0; i < 8; i += 1) {
+      this.addRect(x + width - 35, y + 24 + i * 20, 12, 2, PALETTE.contractor, 0.32);
+    }
+  }
+
   private drawDesk(tile: TilePoint, deskColor: number, accentColor: number): void {
     const x = tile.x * TILE_SIZE + 2;
     const y = tile.y * TILE_SIZE + 8;
 
-    this.addRect(x - 2, y + 12, 32, 4, 0x060b10, 0.45);
+    this.addRect(x - 2, y + 12, 32, 4, 0x05070f, 0.46);
     this.addRect(x, y, 28, 14, deskColor);
     this.addRect(x, y, 28, 3, accentColor, 0.88);
-    this.addRect(x + 2, y + 14, 4, 7, 0x0b1219);
-    this.addRect(x + 22, y + 14, 4, 7, 0x0b1219);
-    this.addRect(x + 15, y - 8, 11, 7, 0x2a3f52);
-    this.addRect(x + 16, y - 7, 9, 5, 0x8fd0ff, 0.45);
-    this.addRect(x + 4, y + 5, 8, 4, 0x1b2937);
+    this.addRect(x + 2, y + 14, 4, 7, 0x0d1320);
+    this.addRect(x + 22, y + 14, 4, 7, 0x0d1320);
+    this.addRect(x + 15, y - 8, 11, 7, 0x121a28);
+    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.35);
+    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.6);
   }
 
   private drawChair(tile: TilePoint, seatColor: number): void {
@@ -308,31 +464,8 @@ export class OfficeScene {
     const y = tile.y * TILE_SIZE + 10;
 
     this.addRect(x, y, 16, 10, seatColor);
-    this.addRect(x + 2, y - 4, 12, 4, 0x334a5f);
-    this.addRect(x + 7, y + 10, 2, 6, 0x111a24);
-  }
-
-  private drawServerRack(tileX: number, tileY: number): void {
-    const x = tileX * TILE_SIZE + 6;
-    const y = tileY * TILE_SIZE + 4;
-
-    this.addRect(x, y, 20, 44, 0x253445);
-
-    for (let i = 0; i < 5; i += 1) {
-      this.addRect(x + 3, y + 6 + i * 7, 14, 2, 0x7cb8ff, 0.35);
-    }
-
-    this.addRect(x + 3, y + 40, 14, 2, 0x3f556b, 0.7);
-  }
-
-  private drawStatusBoard(tileX: number, tileY: number, glowColor: number): void {
-    const x = tileX * TILE_SIZE + 4;
-    const y = tileY * TILE_SIZE + 4;
-
-    this.addRect(x, y, 24, 16, 0x27394a);
-    this.addRect(x + 2, y + 2, 20, 12, 0x0f1721);
-    this.addRect(x + 4, y + 4, 16, 2, glowColor, 0.45);
-    this.addRect(x + 4, y + 8, 12, 2, 0x87b8ff, 0.3);
+    this.addRect(x + 2, y - 4, 12, 4, 0x273142);
+    this.addRect(x + 7, y + 10, 2, 6, 0x111827);
   }
 
   private syncAgents(agents: AgentState[]): void {
@@ -427,7 +560,7 @@ export class OfficeScene {
     const label = new Text({
       text: this.labelFor(agent),
       style: {
-        fill: 0xc9d1d9,
+        fill: PALETTE.text,
         fontFamily: "'JetBrains Mono', 'Fira Mono', monospace",
         fontSize: 8,
         fontWeight: "700",
