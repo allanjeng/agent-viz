@@ -7,6 +7,7 @@ import { GatewaySource } from "./gateway-source.js";
 import { MockAcpSource } from "./mock-acp-source.js";
 import { PERSISTENT_AGENTS } from "./mock-data.js";
 import { MockGatewaySource } from "./mock-gateway-source.js";
+import { ProcessSource } from "./process-source.js";
 import { BridgeStateStore } from "./state-store.js";
 import { BridgeWsServer } from "./ws-server.js";
 
@@ -38,11 +39,13 @@ async function main(): Promise<void> {
 
   let gatewaySource: { start(): void; stop(): void };
   let acpSource: { start(): void | Promise<void>; stop(): void };
+  let processSource: { start(): void; stop(): void };
 
   if (mockMode) {
     console.log("[bridge] Starting in MOCK mode.");
     gatewaySource = new MockGatewaySource(store);
     acpSource = new MockAcpSource(store);
+    processSource = new ProcessSource(store);
   } else {
     console.log("[bridge] Starting with real OpenClaw data sources.");
     const apiUrl =
@@ -54,11 +57,13 @@ async function main(): Promise<void> {
 
     gatewaySource = new GatewaySource(store, apiUrl, authToken);
     acpSource = new AcpSource(store, sessionsDir);
+    processSource = new ProcessSource(store);
   }
 
   wsServer.start();
   gatewaySource.start();
   await acpSource.start();
+  processSource.start();
 
   console.log("[bridge] OpenClaw state bridge started.");
   console.log(
@@ -69,6 +74,7 @@ async function main(): Promise<void> {
     console.log("[bridge] shutting down...");
     gatewaySource.stop();
     acpSource.stop();
+    processSource.stop();
     wsServer.stop();
     process.exit(0);
   }
