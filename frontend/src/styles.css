@@ -239,25 +239,25 @@ body {
 }
 
 .agent-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
-  background-image: url("/assets/agents.png");
+  width: 18px;
+  height: 32px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45) inset, 0 2px 4px rgba(0, 0, 0, 0.45);
   background-repeat: no-repeat;
-  background-size: 256px auto;
+  background-size: 112px 96px;
+  background-position: 0 0;
   image-rendering: pixelated;
   flex: 0 0 auto;
 }
 
-.agent-avatar.nexus { background-position: 0 0; }
-.agent-avatar.pivot { background-position: -128px 0; }
-.agent-avatar.aegis { background-position: 0 -32px; }
-.agent-avatar.researcher { background-position: -128px -32px; }
-.agent-avatar.codex { background-position: 0 -64px; }
-.agent-avatar.claude { background-position: -128px -64px; }
-.agent-avatar.gemini { background-position: 0 -96px; }
+.agent-avatar.nexus { background-image: url("/assets/characters/char_0.png"); }
+.agent-avatar.pivot { background-image: url("/assets/characters/char_1.png"); }
+.agent-avatar.aegis { background-image: url("/assets/characters/char_2.png"); }
+.agent-avatar.researcher { background-image: url("/assets/characters/char_3.png"); }
+.agent-avatar.codex { background-image: url("/assets/characters/char_4.png"); }
+.agent-avatar.claude,
+.agent-avatar.gemini { background-image: url("/assets/characters/char_5.png"); }
 
 .agent-name {
   font-size: 13px;

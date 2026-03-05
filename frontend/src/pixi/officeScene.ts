@@ -2,6 +2,7 @@ import {
   Application,
   Assets,
   Container,
+  Rectangle,
   Sprite,
   Text,
   Texture,
@@ -16,15 +17,20 @@ import {
   OFFICE_WIDTH_TILES,
   PERSISTENT_DESKS,
   TILE_SIZE,
+  TilePoint,
 } from "./layout";
 import { AgentState, AgentStatus } from "../types";
 
-type Pose = "idle" | "thinking" | "working" | "error";
 type Archetype = "nexus" | "pivot" | "aegis" | "researcher" | "codex" | "claude" | "gemini";
+type CharacterDirection = "down" | "up" | "right" | "left";
+type CharacterRow = "down" | "up" | "right";
 
-type SheetWithTextures = {
-  textures: Record<string, Texture>;
-};
+type CharacterFrames = Record<CharacterRow, Texture[]>;
+
+const CHARACTER_FRAME_WIDTH = 16;
+const CHARACTER_FRAME_HEIGHT = 32;
+const CHARACTER_SCALE = 3;
+const FLOOR_TILE_SIZE = 16;
 
 const PERSISTENT_LABELS: Record<string, string> = {
   nexus: "Nexus",
@@ -33,66 +39,55 @@ const PERSISTENT_LABELS: Record<string, string> = {
   researcher: "Researcher",
 };
 
-type WorkstationProfile = {
-  zoneTile: string;
-  deskTile: string;
-  chairTile: string;
-  props: Array<{ x: number; y: number; tile: string }>;
+const CHARACTER_SHEET_PATHS: Record<Archetype, string> = {
+  nexus: "/assets/characters/char_0.png",
+  pivot: "/assets/characters/char_1.png",
+  aegis: "/assets/characters/char_2.png",
+  researcher: "/assets/characters/char_3.png",
+  codex: "/assets/characters/char_4.png",
+  claude: "/assets/characters/char_5.png",
+  gemini: "/assets/characters/char_5.png",
 };
 
-const WORKSTATIONS: Record<string, WorkstationProfile> = {
+const PERSISTENT_THEMES: Record<string, { zone: number; desk: number; accent: number; chair: number }> = {
   nexus: {
-    zoneTile: "zone_nexus",
-    deskTile: "desk_nexus",
-    chairTile: "chair_nexus",
-    props: [
-      { x: 2, y: 3, tile: "prop_monitor_stack" },
-      { x: 7, y: 3, tile: "prop_server_rack" },
-    ],
+    zone: 0x1a2734,
+    desk: 0x2c3f52,
+    accent: 0x69b2ff,
+    chair: 0x2a3c50,
   },
   pivot: {
-    zoneTile: "zone_pivot",
-    deskTile: "desk_pivot",
-    chairTile: "chair_pivot",
-    props: [
-      { x: 12, y: 3, tile: "prop_chart_board" },
-      { x: 14, y: 4, tile: "prop_temp_terminal" },
-    ],
+    zone: 0x2a2438,
+    desk: 0x4a3a5f,
+    accent: 0xd5a3ff,
+    chair: 0x413357,
   },
   aegis: {
-    zoneTile: "zone_aegis",
-    deskTile: "desk_aegis",
-    chairTile: "chair_aegis",
-    props: [
-      { x: 2, y: 9, tile: "prop_shield_node" },
-      { x: 7, y: 10, tile: "prop_server_rack" },
-    ],
+    zone: 0x213033,
+    desk: 0x35545b,
+    accent: 0x77d8c0,
+    chair: 0x2d4a51,
   },
   researcher: {
-    zoneTile: "zone_researcher",
-    deskTile: "desk_researcher",
-    chairTile: "chair_researcher",
-    props: [
-      { x: 12, y: 9, tile: "prop_book_stack" },
-      { x: 14, y: 10, tile: "prop_book_stack" },
-    ],
+    zone: 0x2b2b36,
+    desk: 0x4e4b5f,
+    accent: 0x9fb0ff,
+    chair: 0x444059,
   },
 };
 
-const CONTRACTOR_PROPS: Array<{ x: number; y: number; tile: string }> = [
-  { x: 18, y: 3, tile: "prop_temp_terminal" },
-  { x: 23, y: 3, tile: "prop_temp_terminal" },
-  { x: 18, y: 6, tile: "prop_temp_terminal" },
-  { x: 23, y: 6, tile: "prop_temp_terminal" },
-  { x: 18, y: 9, tile: "prop_temp_terminal" },
-  { x: 23, y: 9, tile: "prop_temp_terminal" },
-  { x: 25, y: 12, tile: "prop_server_rack" },
-];
+const CONTRACTOR_THEME = {
+  zone: 0x182733,
+  desk: 0x34495d,
+  accent: 0x7ec7ff,
+  chair: 0x2d4052,
+};
 
 type AgentVisual = {
   agent: AgentState;
   container: Container;
   sprite: Sprite;
+  errorOverlay: Sprite;
   label: Text;
   labelShadow: Text;
   slotIndex: number | null;
@@ -115,9 +110,7 @@ export class OfficeScene {
 
   private agentLayer: Container | null = null;
 
-  private agentTextures: Record<string, Texture> = {};
-
-  private tileTextures: Record<string, Texture> = {};
+  private characterFrames = new Map<Archetype, CharacterFrames>();
 
   private visuals = new Map<string, AgentVisual>();
 
@@ -153,6 +146,7 @@ export class OfficeScene {
     }
 
     this.visuals.clear();
+    this.characterFrames.clear();
     this.host.innerHTML = "";
   }
 
@@ -186,17 +180,15 @@ export class OfficeScene {
     this.backgroundLayer = backgroundLayer;
     this.agentLayer = agentLayer;
 
-    const [agentSheet, tileSheet] = await Promise.all([
-      Assets.load("/assets/agents.json") as Promise<SheetWithTextures>,
-      Assets.load("/assets/tiles.json") as Promise<SheetWithTextures>,
-    ]);
+    await Promise.all(
+      (Object.entries(CHARACTER_SHEET_PATHS) as Array<[Archetype, string]>).map(([archetype, path]) =>
+        this.loadCharacterSheet(archetype, path),
+      ),
+    );
 
     if (this.destroyed) {
       return;
     }
-
-    this.agentTextures = agentSheet.textures;
-    this.tileTextures = tileSheet.textures;
 
     this.drawOffice();
 
@@ -213,94 +205,134 @@ export class OfficeScene {
 
     this.backgroundLayer.removeChildren();
 
-    for (let tileY = 0; tileY < OFFICE_HEIGHT_TILES; tileY += 1) {
-      for (let tileX = 0; tileX < OFFICE_WIDTH_TILES; tileX += 1) {
-        let floorTile = (tileX + tileY) % 2 === 0 ? "floor_dark" : "floor_alt";
+    const widthPx = OFFICE_WIDTH_TILES * TILE_SIZE;
+    const heightPx = OFFICE_HEIGHT_TILES * TILE_SIZE;
+    const floorCols = Math.ceil(widthPx / FLOOR_TILE_SIZE);
+    const floorRows = Math.ceil(heightPx / FLOOR_TILE_SIZE);
 
-        if (tileY === 8 && tileX > 1 && tileX < OFFICE_WIDTH_TILES - 1) {
-          floorTile = "floor_grid";
+    this.addRect(0, 0, widthPx, heightPx, 0x0b1118);
+
+    for (let y = 0; y < floorRows; y += 1) {
+      for (let x = 0; x < floorCols; x += 1) {
+        let floorColor = (x + y) % 2 === 0 ? 0x111821 : 0x0f151d;
+
+        if ((x + y * 3) % 11 === 0) {
+          floorColor = 0x13202a;
         }
 
-        if (tileX >= 17 && tileY >= 2 && tileY <= 14 && tileX % 2 === 0) {
-          floorTile = "floor_grid";
+        if (y >= 15 && y <= 18) {
+          floorColor = x % 2 === 0 ? 0x16212c : 0x141d27;
         }
 
-        this.placeTile(floorTile, tileX, tileY);
+        if (x >= 34 && x <= 54 && y >= 4 && y <= 30 && x % 2 === 0) {
+          floorColor = 0x16242e;
+        }
+
+        const px = x * FLOOR_TILE_SIZE;
+        const py = y * FLOOR_TILE_SIZE;
+
+        this.addRect(px, py, FLOOR_TILE_SIZE, FLOOR_TILE_SIZE, floorColor);
+
+        if ((x + y) % 4 === 0) {
+          this.addRect(px, py, FLOOR_TILE_SIZE, 1, 0x1d2b37, 0.28);
+        }
       }
     }
 
-    for (let tileX = 0; tileX < OFFICE_WIDTH_TILES; tileX += 1) {
-      this.placeTile(tileX % 3 === 0 ? "wall_neon" : "wall_dark", tileX, 0);
-      this.placeTile("wall_dark", tileX, OFFICE_HEIGHT_TILES - 1);
-    }
+    this.addRect(0, 0, widthPx, 16, 0x202d3a);
+    this.addRect(0, heightPx - 16, widthPx, 16, 0x1b2734);
+    this.addRect(0, 0, 16, heightPx, 0x1b2734);
+    this.addRect(widthPx - 16, 0, 16, heightPx, 0x1b2734);
+    this.addRect(16, 6, widthPx - 32, 2, 0x55a8ff, 0.45);
 
-    for (let tileY = 1; tileY < OFFICE_HEIGHT_TILES - 1; tileY += 1) {
-      this.placeTile("wall_dark", 0, tileY);
-      this.placeTile("wall_dark", OFFICE_WIDTH_TILES - 1, tileY);
-    }
+    const doorY = heightPx - TILE_SIZE * 2;
+    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x314659);
+    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, 0x7eb7ff, 0.28);
 
     for (const [id, desk] of Object.entries(PERSISTENT_DESKS)) {
-      const station = WORKSTATIONS[id];
-      if (!station) {
-        continue;
-      }
-
-      this.paintZone(desk.x - 1, desk.y - 1, 4, 4, station.zoneTile);
-      this.placeTile(station.deskTile, desk.x, desk.y);
-      this.placeTile(station.chairTile, desk.x, desk.y + 1);
-
-      for (const prop of station.props) {
-        this.placeTile(prop.tile, prop.x, prop.y);
-      }
+      const theme = PERSISTENT_THEMES[id] ?? PERSISTENT_THEMES.nexus;
+      this.addRect(desk.x * TILE_SIZE - 20, desk.y * TILE_SIZE - 14, 72, 62, theme.zone, 0.42);
+      this.drawDesk(desk, theme.desk, theme.accent);
+      this.drawChair({ x: desk.x, y: desk.y + 1 }, theme.chair);
     }
 
-    this.paintZone(17, 3, 10, 10, "zone_contract");
+    this.addRect(17 * TILE_SIZE, 3 * TILE_SIZE, 10 * TILE_SIZE, 10 * TILE_SIZE, CONTRACTOR_THEME.zone, 0.42);
 
     for (const desk of CONTRACTOR_DESKS) {
-      this.placeTile("desk_contract", desk.x, desk.y);
-      this.placeTile("chair_contract", desk.x, desk.y + 1);
+      this.drawDesk(desk, CONTRACTOR_THEME.desk, CONTRACTOR_THEME.accent);
+      this.drawChair({ x: desk.x, y: desk.y + 1 }, CONTRACTOR_THEME.chair);
     }
 
-    for (const prop of CONTRACTOR_PROPS) {
-      this.placeTile(prop.tile, prop.x, prop.y);
-    }
-
-    this.placeTile("prop_server_rack", 25, 2);
-    this.placeTile("prop_chart_board", 20, 13);
-    this.placeTile("prop_monitor_stack", 9, 1);
-
-    this.placeTile("door", OFFICE_WIDTH_TILES - 1, OFFICE_HEIGHT_TILES - 2);
+    this.drawServerRack(25, 2);
+    this.drawServerRack(25, 12);
+    this.drawStatusBoard(20, 13, 0x58a6ff);
+    this.drawStatusBoard(9, 1, 0x8fbcff);
   }
 
-  private placeTile(tileName: string, tileX: number, tileY: number): void {
-    if (!this.backgroundLayer) {
-      return;
-    }
+  private addRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+    alpha = 1,
+  ): Sprite {
+    const sprite = new Sprite(Texture.WHITE);
+    sprite.x = Math.round(x);
+    sprite.y = Math.round(y);
+    sprite.width = Math.max(0, Math.round(width));
+    sprite.height = Math.max(0, Math.round(height));
+    sprite.tint = color;
+    sprite.alpha = alpha;
+    this.backgroundLayer?.addChild(sprite);
 
-    const sprite = new Sprite(this.tile(tileName));
-    sprite.x = tileX * TILE_SIZE;
-    sprite.y = tileY * TILE_SIZE;
-    this.backgroundLayer.addChild(sprite);
+    return sprite;
   }
 
-  private paintZone(startX: number, startY: number, width: number, height: number, tileName: string): void {
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const tileX = startX + x;
-        const tileY = startY + y;
+  private drawDesk(tile: TilePoint, deskColor: number, accentColor: number): void {
+    const x = tile.x * TILE_SIZE + 2;
+    const y = tile.y * TILE_SIZE + 8;
 
-        if (
-          tileX <= 0 ||
-          tileY <= 0 ||
-          tileX >= OFFICE_WIDTH_TILES - 1 ||
-          tileY >= OFFICE_HEIGHT_TILES - 1
-        ) {
-          continue;
-        }
+    this.addRect(x - 2, y + 12, 32, 4, 0x060b10, 0.45);
+    this.addRect(x, y, 28, 14, deskColor);
+    this.addRect(x, y, 28, 3, accentColor, 0.88);
+    this.addRect(x + 2, y + 14, 4, 7, 0x0b1219);
+    this.addRect(x + 22, y + 14, 4, 7, 0x0b1219);
+    this.addRect(x + 15, y - 8, 11, 7, 0x2a3f52);
+    this.addRect(x + 16, y - 7, 9, 5, 0x8fd0ff, 0.45);
+    this.addRect(x + 4, y + 5, 8, 4, 0x1b2937);
+  }
 
-        this.placeTile(tileName, tileX, tileY);
-      }
+  private drawChair(tile: TilePoint, seatColor: number): void {
+    const x = tile.x * TILE_SIZE + 8;
+    const y = tile.y * TILE_SIZE + 10;
+
+    this.addRect(x, y, 16, 10, seatColor);
+    this.addRect(x + 2, y - 4, 12, 4, 0x334a5f);
+    this.addRect(x + 7, y + 10, 2, 6, 0x111a24);
+  }
+
+  private drawServerRack(tileX: number, tileY: number): void {
+    const x = tileX * TILE_SIZE + 6;
+    const y = tileY * TILE_SIZE + 4;
+
+    this.addRect(x, y, 20, 44, 0x253445);
+
+    for (let i = 0; i < 5; i += 1) {
+      this.addRect(x + 3, y + 6 + i * 7, 14, 2, 0x7cb8ff, 0.35);
     }
+
+    this.addRect(x + 3, y + 40, 14, 2, 0x3f556b, 0.7);
+  }
+
+  private drawStatusBoard(tileX: number, tileY: number, glowColor: number): void {
+    const x = tileX * TILE_SIZE + 4;
+    const y = tileY * TILE_SIZE + 4;
+
+    this.addRect(x, y, 24, 16, 0x27394a);
+    this.addRect(x + 2, y + 2, 20, 12, 0x0f1721);
+    this.addRect(x + 4, y + 4, 16, 2, glowColor, 0.45);
+    this.addRect(x + 4, y + 8, 12, 2, 0x87b8ff, 0.3);
   }
 
   private syncAgents(agents: AgentState[]): void {
@@ -368,9 +400,15 @@ export class OfficeScene {
   private createVisual(agent: AgentState): AgentVisual {
     const archetype = this.archetypeFor(agent);
     const container = new Container();
-    const sprite = new Sprite(this.texture(archetype, "idle"));
+    const sprite = new Sprite(this.texture(archetype, "down", 0));
     sprite.anchor.set(0.5, 1);
-    sprite.scale.set(1);
+    sprite.scale.set(CHARACTER_SCALE);
+
+    const errorOverlay = new Sprite(sprite.texture);
+    errorOverlay.anchor.set(0.5, 1);
+    errorOverlay.scale.set(CHARACTER_SCALE);
+    errorOverlay.tint = 0xff6b6b;
+    errorOverlay.alpha = 0;
 
     const labelShadow = new Text({
       text: this.labelFor(agent),
@@ -399,7 +437,7 @@ export class OfficeScene {
     label.anchor.set(0.5, 0);
     label.y = 4;
 
-    container.addChild(sprite, labelShadow, label);
+    container.addChild(sprite, errorOverlay, labelShadow, label);
 
     const start = agent.type === "contractor"
       ? { x: ENTRY_POINT.x, y: ENTRY_POINT.y }
@@ -414,6 +452,7 @@ export class OfficeScene {
       agent,
       container,
       sprite,
+      errorOverlay,
       label,
       labelShadow,
       slotIndex: null,
@@ -437,7 +476,7 @@ export class OfficeScene {
     const now = performance.now() / 1000;
 
     for (const [id, visual] of this.visuals) {
-      const speed = visual.agent.type === "contractor" ? 110 : 140;
+      const speed = visual.agent.type === "contractor" ? 105 : 118;
       const dx = visual.targetX - visual.x;
       const dy = visual.targetY - visual.y;
       const distance = Math.hypot(dx, dy);
@@ -451,23 +490,25 @@ export class OfficeScene {
       }
 
       const archetype = this.archetypeFor(visual.agent);
-      const pose = moving && visual.agent.type === "contractor"
-        ? (Math.floor((now + visual.phase) * 10) % 2 === 0 ? "working" : "thinking")
-        : this.poseFor(visual.agent.status, now + visual.phase);
-      visual.sprite.texture = this.texture(archetype, pose);
+      const direction = this.directionFor(visual.agent.status, moving, dx, dy);
+      const frame = this.frameFor(visual.agent.status, moving, now + visual.phase);
+      const texture = this.texture(archetype, direction, frame);
 
-      visual.sprite.tint =
-        visual.agent.status === "error" && Math.floor((now + visual.phase) * 8) % 2 === 0
-          ? 0xff8b8b
-          : 0xffffff;
+      visual.sprite.texture = texture;
+      visual.errorOverlay.texture = texture;
+      this.applyDirection(visual, direction);
+
+      visual.errorOverlay.alpha = visual.agent.status === "error"
+        ? 0.3 + (Math.sin((now + visual.phase) * 8) + 1) * 0.06
+        : 0;
 
       let bob = 0;
-      if (moving && visual.agent.type === "contractor") {
-        bob = Math.sin((now + visual.phase) * 16) * 1.6;
+      if (moving) {
+        bob = Math.sin((now + visual.phase) * 10) * 1.4;
       } else if (visual.agent.status === "working") {
-        bob = Math.sin((now + visual.phase) * 12) * 2.2;
+        bob = Math.sin((now + visual.phase) * 12) * 2;
       } else if (visual.agent.status === "thinking") {
-        bob = Math.sin((now + visual.phase) * 8) * 1.2;
+        bob = Math.sin((now + visual.phase) * 7) * 1.1;
       }
 
       if (visual.alpha !== visual.targetAlpha) {
@@ -559,26 +600,86 @@ export class OfficeScene {
     return "codex";
   }
 
-  private poseFor(status: AgentStatus, time: number): Pose {
+  private directionFor(status: AgentStatus, moving: boolean, dx: number, dy: number): CharacterDirection {
+    if (status === "error" || !moving) {
+      return "down";
+    }
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      return dx >= 0 ? "right" : "left";
+    }
+
+    return dy >= 0 ? "down" : "up";
+  }
+
+  private frameFor(status: AgentStatus, moving: boolean, time: number): number {
     switch (status) {
       case "thinking":
-        return Math.floor(time * 5) % 2 === 0 ? "thinking" : "idle";
+        return Math.floor(time * 2) % 2;
       case "working":
-        return Math.floor(time * 8) % 2 === 0 ? "working" : "thinking";
+        return Math.floor(time * 8) % 3;
       case "error":
-        return Math.floor(time * 6) % 2 === 0 ? "error" : "idle";
+        return 0;
       default:
-        return "idle";
+        return moving ? Math.floor(time * 6) % 2 : 0;
     }
   }
 
-  private texture(archetype: Archetype, pose: Pose): Texture {
-    const key = `${archetype}_${pose}`;
-
-    return this.agentTextures[key] ?? this.agentTextures.codex_idle ?? Texture.WHITE;
+  private applyDirection(visual: AgentVisual, direction: CharacterDirection): void {
+    const xScale = direction === "left" ? -CHARACTER_SCALE : CHARACTER_SCALE;
+    visual.sprite.scale.set(xScale, CHARACTER_SCALE);
+    visual.errorOverlay.scale.set(xScale, CHARACTER_SCALE);
   }
 
-  private tile(name: string): Texture {
-    return this.tileTextures[name] ?? Texture.WHITE;
+  private texture(archetype: Archetype, direction: CharacterDirection, frame: number): Texture {
+    const fallback = this.characterFrames.get("codex");
+    const set = this.characterFrames.get(archetype) ?? fallback;
+
+    if (!set) {
+      return Texture.WHITE;
+    }
+
+    const row: CharacterRow = direction === "left" ? "right" : direction;
+    const textures = set[row];
+
+    if (textures.length === 0) {
+      return Texture.WHITE;
+    }
+
+    const index = Math.max(0, Math.min(frame, textures.length - 1));
+    return textures[index];
+  }
+
+  private async loadCharacterSheet(archetype: Archetype, path: string): Promise<void> {
+    const sheet = await Assets.load({
+      src: path,
+      data: { scaleMode: "nearest" },
+    }) as Texture;
+
+    sheet.source.scaleMode = "nearest";
+
+    const down: Texture[] = [];
+    const up: Texture[] = [];
+    const right: Texture[] = [];
+
+    for (let frame = 0; frame < 3; frame += 1) {
+      down.push(this.sliceCharacterFrame(sheet, frame, 0));
+      up.push(this.sliceCharacterFrame(sheet, frame, 1));
+      right.push(this.sliceCharacterFrame(sheet, frame, 2));
+    }
+
+    this.characterFrames.set(archetype, { down, up, right });
+  }
+
+  private sliceCharacterFrame(sheet: Texture, frameColumn: number, frameRow: number): Texture {
+    return new Texture({
+      source: sheet.source,
+      frame: new Rectangle(
+        frameColumn * CHARACTER_FRAME_WIDTH,
+        frameRow * CHARACTER_FRAME_HEIGHT,
+        CHARACTER_FRAME_WIDTH,
+        CHARACTER_FRAME_HEIGHT,
+      ),
+    });
   }
 }
