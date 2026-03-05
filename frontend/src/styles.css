@@ -43,13 +43,13 @@ body {
 
 #root {
   min-height: 100vh;
-  padding: 22px;
+  padding: 16px;
 }
 
 .dashboard-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) clamp(272px, 23vw, 300px);
+  gap: 14px;
   max-width: 1540px;
   margin: 0 auto;
 }
@@ -125,7 +125,7 @@ body {
 
 .office-canvas {
   width: 100%;
-  min-height: 620px;
+  min-height: 680px;
   border: 2px solid var(--border);
   border-radius: 14px;
   overflow: hidden;

@@ -1,3 +1,4 @@
+import { OFFICE_HEIGHT_TILES, OFFICE_WIDTH_TILES } from "./layout";
 import { OFFICE_PALETTE } from "./theme";
 
 export type PresetFloorColor = {
@@ -101,9 +102,9 @@ export const PRESET_ZONES: PresetZone[] = [
   {
     id: "contractor",
     label: "CONTRACTOR DESKS",
-    x: 29,
+    x: 28,
     y: 3,
-    width: 12,
+    width: 9,
     height: 19,
     accent: OFFICE_PALETTE.contractor,
   },
@@ -115,8 +116,8 @@ function cloneTileColor(tile: number): PresetFloorColor | null {
 }
 
 function createPresetLayout(): PresetLayout {
-  const cols = 44;
-  const rows = 26;
+  const cols = OFFICE_WIDTH_TILES;
+  const rows = OFFICE_HEIGHT_TILES;
   const size = cols * rows;
   const tiles = new Array<number>(size).fill(PRESET_TILE.VOID);
   const tileColors: Array<PresetFloorColor | null> = new Array(size).fill(null);
@@ -166,21 +167,21 @@ function createPresetLayout(): PresetLayout {
   verticalWall(1, 1, rows - 2, new Set());
   verticalWall(cols - 2, 1, rows - 2, new Set([20, 21]));
 
-  fillRect(2, 10, 40, 2, PRESET_TILE.FLOOR_ALT);
-  fillRect(31, 3, 2, 19, PRESET_TILE.FLOOR_ALT);
-  fillRect(36, 3, 2, 19, PRESET_TILE.FLOOR_ALT);
+  fillRect(2, 10, cols - 4, 2, PRESET_TILE.FLOOR_ALT);
+  fillRect(29, 3, 2, 19, PRESET_TILE.FLOOR_ALT);
+  fillRect(33, 3, 2, 19, PRESET_TILE.FLOOR_ALT);
 
   fillRect(3, 3, 10, 7, PRESET_TILE.FLOOR_COMMAND);
   fillRect(16, 3, 10, 7, PRESET_TILE.FLOOR_TRADING);
   fillRect(3, 13, 10, 9, PRESET_TILE.FLOOR_SECURITY);
   fillRect(16, 13, 10, 9, PRESET_TILE.FLOOR_RESEARCH);
-  fillRect(29, 3, 12, 19, PRESET_TILE.FLOOR_CONTRACTOR);
+  fillRect(28, 3, 9, 19, PRESET_TILE.FLOOR_CONTRACTOR);
 
   verticalWall(14, 2, 23, new Set([6, 7, 17, 18]));
   verticalWall(27, 2, 23, new Set([8, 9, 16, 17]));
   horizontalWall(12, 2, 26, new Set([8, 9, 20, 21]));
 
-  fillRect(40, 20, 2, 2, PRESET_TILE.FLOOR_ALT);
+  fillRect(cols - 4, 20, 2, 2, PRESET_TILE.FLOOR_ALT);
   fillRect(2, 20, 5, 2, PRESET_TILE.FLOOR_ALT);
 
   const furniture: PresetFurniture[] = [
@@ -204,15 +205,15 @@ function createPresetLayout(): PresetLayout {
     { uid: "research-shelf-right", type: "lab_archive_right", col: 22, row: 18, alpha: 0.92, tint: 0xe7d6ff },
     { uid: "research-terminal", type: "tech_terminal_small", col: 23, row: 17, alpha: 0.9, tint: 0xddd0ff },
 
-    { uid: "hotdesk-divider-1a", type: "lab_partition_low", col: 29, row: 5, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-1b", type: "lab_partition_low", col: 35, row: 5, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-2a", type: "lab_partition_low", col: 29, row: 9, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-2b", type: "lab_partition_low", col: 35, row: 9, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-3a", type: "lab_partition_low", col: 29, row: 13, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-3b", type: "lab_partition_low", col: 35, row: 13, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-4a", type: "lab_partition_low", col: 29, row: 17, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-divider-4b", type: "lab_partition_low", col: 35, row: 17, alpha: 0.82, tint: 0xe7c29d },
-    { uid: "hotdesk-bench", type: "tech_floor_bench", col: 31, row: 21, alpha: 0.82, tint: 0xdfb088 },
+    { uid: "hotdesk-divider-1a", type: "lab_partition_low", col: 28, row: 5, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-1b", type: "lab_partition_low", col: 32, row: 5, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-2a", type: "lab_partition_low", col: 28, row: 9, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-2b", type: "lab_partition_low", col: 32, row: 9, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-3a", type: "lab_partition_low", col: 28, row: 13, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-3b", type: "lab_partition_low", col: 32, row: 13, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-4a", type: "lab_partition_low", col: 28, row: 17, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-divider-4b", type: "lab_partition_low", col: 32, row: 17, alpha: 0.82, tint: 0xe7c29d },
+    { uid: "hotdesk-bench", type: "tech_floor_bench", col: 30, row: 21, alpha: 0.82, tint: 0xdfb088 },
 
     {
       uid: "lamp-left",
@@ -235,7 +236,7 @@ function createPresetLayout(): PresetLayout {
     {
       uid: "lamp-center-right",
       type: "lab_hanging_lamp",
-      col: 28,
+      col: 26,
       row: 2,
       offsetY: -20,
       alpha: 0.68,
@@ -244,7 +245,7 @@ function createPresetLayout(): PresetLayout {
     {
       uid: "lamp-right",
       type: "lab_hanging_lamp",
-      col: 36,
+      col: 32,
       row: 2,
       offsetY: -20,
       alpha: 0.66,
