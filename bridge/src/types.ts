@@ -7,6 +7,10 @@ export interface AgentState {
   type: AgentType;
   status: AgentStatus;
   connections: string[];
+  model?: string;
+  totalTokens?: number;
+  sessionCount?: number;
+  lastActivity?: string;
 }
 
 export interface AgentPatch extends Partial<Omit<AgentState, "id">> {

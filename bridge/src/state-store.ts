@@ -13,11 +13,19 @@ function cloneAgent(agent: AgentState): AgentState {
   return {
     ...agent,
     connections: [...agent.connections],
+    model: agent.model,
+    totalTokens: agent.totalTokens,
+    sessionCount: agent.sessionCount,
+    lastActivity: agent.lastActivity,
   };
 }
 
 function agentsEqual(a: AgentState, b: AgentState): boolean {
   if (a.id !== b.id || a.name !== b.name || a.type !== b.type || a.status !== b.status) {
+    return false;
+  }
+
+  if (a.model !== b.model || a.totalTokens !== b.totalTokens || a.sessionCount !== b.sessionCount) {
     return false;
   }
 
@@ -121,6 +129,10 @@ export class BridgeStateStore {
       type: patch.type ?? existing.type,
       status: patch.status ?? existing.status,
       connections: dedupeConnections(patch.connections ?? existing.connections),
+      model: patch.model ?? existing.model,
+      totalTokens: patch.totalTokens ?? existing.totalTokens,
+      sessionCount: patch.sessionCount ?? existing.sessionCount,
+      lastActivity: patch.lastActivity ?? existing.lastActivity,
     };
 
     if (agentsEqual(existing, merged)) {

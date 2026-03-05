@@ -15,6 +15,22 @@ function formatTime(isoTime: string): string {
   });
 }
 
+function formatTokens(n?: number): string {
+  if (n == null || n === 0) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return String(n);
+}
+
+function timeAgo(iso?: string): string {
+  if (!iso) return "never";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return "just now";
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
+  return `${Math.floor(ms / 86_400_000)}d ago`;
+}
+
 export default function App(): JSX.Element {
   const { snapshot, connectionState, bridgeUrl } = useBridgeState();
 
@@ -45,6 +61,40 @@ export default function App(): JSX.Element {
             <h2>Contractors</h2>
             <p>{contractors.length}</p>
           </article>
+        </section>
+
+        <section className="agent-roster">
+          <h2>Agents</h2>
+          {persistent.map((agent) => (
+            <div key={agent.id} className={`agent-card status-${agent.status}`}>
+              <div className="agent-card-header">
+                <span className="agent-name">{agent.name}</span>
+                <span className={`status-dot ${agent.status}`} />
+              </div>
+              <div className="agent-card-meta">
+                {agent.model && <span className="tag model">{agent.model}</span>}
+                {agent.sessionCount != null && <span className="tag">{agent.sessionCount} sessions</span>}
+                {agent.totalTokens != null && <span className="tag">{formatTokens(agent.totalTokens)} tokens</span>}
+                <span className="tag time">{timeAgo(agent.lastActivity)}</span>
+              </div>
+            </div>
+          ))}
+          {contractors.length > 0 && (
+            <>
+              <h3>Contractors</h3>
+              {contractors.map((agent) => (
+                <div key={agent.id} className={`agent-card contractor status-${agent.status}`}>
+                  <div className="agent-card-header">
+                    <span className="agent-name">{agent.name}</span>
+                    <span className={`status-dot ${agent.status}`} />
+                  </div>
+                  <div className="agent-card-meta">
+                    <span className="tag time">{timeAgo(agent.lastActivity)}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </section>
 
         <section className="bridge-meta">
