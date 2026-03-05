@@ -4,6 +4,7 @@ import {
   Container,
   Graphics,
   Sprite,
+  Text,
   Texture,
   Ticker,
 } from "pixi.js";
@@ -26,14 +27,26 @@ type SheetWithTextures = {
   textures: Record<string, Texture>;
 };
 
+const PERSISTENT_LABELS: Record<string, string> = {
+  nexus: "Nexus",
+  pivot: "Pivot",
+  aegis: "Aegis",
+  researcher: "Researcher",
+};
+
 type AgentVisual = {
   agent: AgentState;
+  container: Container;
   sprite: Sprite;
+  label: Text;
+  labelShadow: Text;
   slotIndex: number | null;
   x: number;
   y: number;
   targetX: number;
   targetY: number;
+  alpha: number;
+  targetAlpha: number;
   despawning: boolean;
   phase: number;
 };
@@ -222,11 +235,18 @@ export class OfficeScene {
       if (!visual) {
         visual = this.createVisual(agent);
         this.visuals.set(agent.id, visual);
-        this.agentLayer.addChild(visual.sprite);
+        this.agentLayer.addChild(visual.container);
       }
 
       visual.agent = agent;
       visual.despawning = false;
+      visual.targetAlpha = 1;
+      const labelText = this.labelFor(agent);
+
+      if (visual.label.text !== labelText) {
+        visual.label.text = labelText;
+        visual.labelShadow.text = labelText;
+      }
 
       if (agent.type === "contractor") {
         if (visual.slotIndex === null) {
@@ -259,30 +279,68 @@ export class OfficeScene {
       visual.despawning = true;
       visual.targetX = ENTRY_POINT.x;
       visual.targetY = ENTRY_POINT.y;
+      visual.targetAlpha = 0;
     }
   }
 
   private createVisual(agent: AgentState): AgentVisual {
     const archetype = this.archetypeFor(agent);
+    const container = new Container();
     const sprite = new Sprite(this.texture(archetype, "idle"));
     sprite.anchor.set(0.5, 1);
-    sprite.scale.set(2);
+    sprite.scale.set(1);
+
+    const labelShadow = new Text({
+      text: this.labelFor(agent),
+      style: {
+        fill: 0x111111,
+        fontFamily: "'Press Start 2P', 'Courier New', monospace",
+        fontSize: 8,
+        fontWeight: "700",
+      },
+      resolution: 2,
+    });
+    labelShadow.anchor.set(0.5, 0);
+    labelShadow.x = 1;
+    labelShadow.y = 5;
+
+    const label = new Text({
+      text: this.labelFor(agent),
+      style: {
+        fill: 0xffffff,
+        fontFamily: "'Press Start 2P', 'Courier New', monospace",
+        fontSize: 8,
+        fontWeight: "700",
+      },
+      resolution: 2,
+    });
+    label.anchor.set(0.5, 0);
+    label.y = 4;
+
+    container.addChild(sprite, labelShadow, label);
 
     const start = agent.type === "contractor"
       ? { x: ENTRY_POINT.x, y: ENTRY_POINT.y }
       : this.persistentPosition(agent.id);
 
-    sprite.x = start.x;
-    sprite.y = start.y;
+    container.x = start.x;
+    container.y = start.y;
+    const initialAlpha = agent.type === "contractor" ? 0 : 1;
+    container.alpha = initialAlpha;
 
     return {
       agent,
+      container,
       sprite,
+      label,
+      labelShadow,
       slotIndex: null,
       x: start.x,
       y: start.y,
       targetX: start.x,
       targetY: start.y,
+      alpha: initialAlpha,
+      targetAlpha: 1,
       despawning: false,
       phase: Math.random() * Math.PI * 2,
     };
@@ -301,6 +359,7 @@ export class OfficeScene {
       const dx = visual.targetX - visual.x;
       const dy = visual.targetY - visual.y;
       const distance = Math.hypot(dx, dy);
+      const moving = distance > 1;
 
       if (distance > 0.1) {
         const step = Math.min(distance, speed * seconds);
@@ -310,7 +369,9 @@ export class OfficeScene {
       }
 
       const archetype = this.archetypeFor(visual.agent);
-      const pose = this.poseFor(visual.agent.status, now + visual.phase);
+      const pose = moving && visual.agent.type === "contractor"
+        ? (Math.floor((now + visual.phase) * 10) % 2 === 0 ? "working" : "thinking")
+        : this.poseFor(visual.agent.status, now + visual.phase);
       visual.sprite.texture = this.texture(archetype, pose);
 
       visual.sprite.tint =
@@ -319,17 +380,34 @@ export class OfficeScene {
           : 0xffffff;
 
       let bob = 0;
-      if (visual.agent.status === "working") {
+      if (moving && visual.agent.type === "contractor") {
+        bob = Math.sin((now + visual.phase) * 16) * 1.6;
+      } else if (visual.agent.status === "working") {
         bob = Math.sin((now + visual.phase) * 12) * 2.5;
       } else if (visual.agent.status === "thinking") {
         bob = Math.sin((now + visual.phase) * 8) * 1.4;
       }
 
-      visual.sprite.x = visual.x;
-      visual.sprite.y = visual.y + bob;
-      visual.sprite.zIndex = visual.sprite.y;
+      if (visual.alpha !== visual.targetAlpha) {
+        const fadeSpeed = visual.despawning ? 3.4 : 4.2;
+        const alphaStep = fadeSpeed * seconds;
+        if (visual.alpha < visual.targetAlpha) {
+          visual.alpha = Math.min(visual.targetAlpha, visual.alpha + alphaStep);
+        } else {
+          visual.alpha = Math.max(visual.targetAlpha, visual.alpha - alphaStep);
+        }
+      }
 
-      if (visual.despawning && Math.hypot(visual.x - ENTRY_POINT.x, visual.y - ENTRY_POINT.y) < 6) {
+      visual.container.x = visual.x;
+      visual.container.y = visual.y + bob;
+      visual.container.zIndex = visual.container.y;
+      visual.container.alpha = visual.alpha;
+
+      if (
+        visual.despawning &&
+        Math.hypot(visual.x - ENTRY_POINT.x, visual.y - ENTRY_POINT.y) < 6 &&
+        visual.alpha <= 0.05
+      ) {
         this.removeVisual(id);
       }
     }
@@ -343,8 +421,8 @@ export class OfficeScene {
       return;
     }
 
-    visual.sprite.removeFromParent();
-    visual.sprite.destroy();
+    visual.container.removeFromParent();
+    visual.container.destroy({ children: true });
     this.visuals.delete(id);
   }
 
@@ -412,6 +490,14 @@ export class OfficeScene {
   private persistentPosition(id: string): { x: number; y: number } {
     const desk = PERSISTENT_DESKS[id] ?? { x: 2, y: 2 };
     return deskToAgentPosition(desk);
+  }
+
+  private labelFor(agent: AgentState): string {
+    if (agent.type === "persistent") {
+      return PERSISTENT_LABELS[agent.id] ?? agent.name;
+    }
+
+    return agent.name;
   }
 
   private archetypeFor(agent: AgentState): Archetype {

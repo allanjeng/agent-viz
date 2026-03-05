@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -8,61 +9,231 @@ from PIL import Image, ImageDraw
 ASSET_DIR = Path(__file__).resolve().parents[1] / "public" / "assets"
 ASSET_DIR.mkdir(parents=True, exist_ok=True)
 
-SPRITE_SIZE = 16
+Color = tuple[int, int, int, int]
+
+SPRITE_SIZE = 32
 SPRITE_COLUMNS = 8
 POSES = ["idle", "thinking", "working", "error"]
-ARCHETYPES = [
-    ("nexus", (42, 157, 143, 255)),
-    ("pivot", (231, 111, 81, 255)),
-    ("aegis", (38, 70, 83, 255)),
-    ("researcher", (138, 177, 125, 255)),
-    ("codex", (69, 123, 157, 255)),
-    ("claude", (244, 162, 97, 255)),
-    ("gemini", (106, 153, 78, 255)),
+@dataclass(frozen=True)
+class Palette:
+    primary: Color
+    secondary: Color
+    accent: Color
+    hair: Color
+    chair: Color
+
+
+ARCHETYPES: list[tuple[str, Palette]] = [
+    (
+        "nexus",
+        Palette(
+            primary=(36, 137, 248, 255),
+            secondary=(75, 228, 255, 255),
+            accent=(192, 252, 255, 255),
+            hair=(23, 73, 150, 255),
+            chair=(37, 63, 106, 255),
+        ),
+    ),
+    (
+        "pivot",
+        Palette(
+            primary=(48, 146, 84, 255),
+            secondary=(204, 164, 67, 255),
+            accent=(242, 226, 137, 255),
+            hair=(29, 88, 55, 255),
+            chair=(43, 81, 60, 255),
+        ),
+    ),
+    (
+        "aegis",
+        Palette(
+            primary=(144, 45, 52, 255),
+            secondary=(68, 22, 28, 255),
+            accent=(226, 93, 73, 255),
+            hair=(30, 18, 22, 255),
+            chair=(55, 34, 38, 255),
+        ),
+    ),
+    (
+        "researcher",
+        Palette(
+            primary=(121, 92, 198, 255),
+            secondary=(240, 244, 255, 255),
+            accent=(181, 148, 246, 255),
+            hair=(74, 50, 126, 255),
+            chair=(63, 57, 94, 255),
+        ),
+    ),
+    (
+        "codex",
+        Palette(
+            primary=(231, 135, 54, 255),
+            secondary=(247, 184, 95, 255),
+            accent=(255, 225, 160, 255),
+            hair=(130, 80, 48, 255),
+            chair=(88, 64, 44, 255),
+        ),
+    ),
+    (
+        "claude",
+        Palette(
+            primary=(236, 124, 112, 255),
+            secondary=(248, 170, 148, 255),
+            accent=(255, 219, 204, 255),
+            hair=(146, 84, 74, 255),
+            chair=(96, 67, 66, 255),
+        ),
+    ),
+    (
+        "gemini",
+        Palette(
+            primary=(47, 161, 155, 255),
+            secondary=(63, 201, 193, 255),
+            accent=(170, 245, 236, 255),
+            hair=(32, 94, 100, 255),
+            chair=(38, 80, 80, 255),
+        ),
+    ),
 ]
 
 
-def draw_agent(draw: ImageDraw.ImageDraw, ox: int, oy: int, body: tuple[int, int, int, int], pose: str) -> None:
-    outline = (30, 25, 20, 255)
-    skin = (238, 204, 170, 255)
-    dark = (34, 34, 38, 255)
-    chair = (108, 113, 128, 255)
+def tint(color: Color, amount: float) -> Color:
+    amount = max(-1.0, min(1.0, amount))
+    if amount >= 0:
+        rgb = [int(c + (255 - c) * amount) for c in color[:3]]
+    else:
+        rgb = [int(c * (1 + amount)) for c in color[:3]]
+    return (max(0, min(255, rgb[0])), max(0, min(255, rgb[1])), max(0, min(255, rgb[2])), color[3])
 
-    if pose in {"idle", "thinking", "error"}:
-        draw.rectangle((ox + 3, oy + 11, ox + 12, oy + 13), fill=chair)
 
-    torso_top = oy + (5 if pose == "working" else 6)
-    torso_bottom = torso_top + 4
+def draw_emblem(draw: ImageDraw.ImageDraw, ox: int, oy: int, archetype: str, palette: Palette) -> None:
+    if archetype == "nexus":
+        bolt = palette.accent
+        draw.rectangle((ox + 15, oy + 17, ox + 16, oy + 18), fill=bolt)
+        draw.rectangle((ox + 14, oy + 19, ox + 15, oy + 20), fill=bolt)
+        draw.rectangle((ox + 16, oy + 19, ox + 17, oy + 20), fill=tint(bolt, -0.2))
+    elif archetype == "pivot":
+        gold = palette.secondary
+        draw.rectangle((ox + 14, oy + 18, ox + 14, oy + 20), fill=gold)
+        draw.rectangle((ox + 15, oy + 17, ox + 15, oy + 20), fill=tint(gold, 0.14))
+        draw.rectangle((ox + 16, oy + 16, ox + 16, oy + 20), fill=palette.accent)
+    elif archetype == "aegis":
+        shield = palette.accent
+        draw.rectangle((ox + 14, oy + 17, ox + 17, oy + 20), fill=shield)
+        draw.point((ox + 15, oy + 18), fill=tint(shield, -0.4))
+        draw.point((ox + 16, oy + 18), fill=tint(shield, -0.4))
+    elif archetype == "researcher":
+        paper = palette.secondary
+        draw.rectangle((ox + 14, oy + 17, ox + 17, oy + 20), fill=paper)
+        draw.point((ox + 15, oy + 18), fill=(105, 118, 156, 255))
+        draw.point((ox + 16, oy + 19), fill=(105, 118, 156, 255))
+    elif archetype == "codex":
+        brace = palette.accent
+        draw.rectangle((ox + 14, oy + 17, ox + 14, oy + 20), fill=brace)
+        draw.rectangle((ox + 17, oy + 17, ox + 17, oy + 20), fill=brace)
+        draw.point((ox + 15, oy + 18), fill=tint(brace, -0.3))
+        draw.point((ox + 16, oy + 19), fill=tint(brace, -0.3))
+    elif archetype == "claude":
+        wave = palette.accent
+        draw.rectangle((ox + 14, oy + 19, ox + 17, oy + 19), fill=wave)
+        draw.point((ox + 15, oy + 18), fill=wave)
+        draw.point((ox + 16, oy + 20), fill=tint(wave, -0.15))
+    elif archetype == "gemini":
+        draw.rectangle((ox + 14, oy + 17, ox + 15, oy + 20), fill=palette.primary)
+        draw.rectangle((ox + 16, oy + 17, ox + 17, oy + 20), fill=palette.secondary)
+        draw.point((ox + 15, oy + 18), fill=palette.accent)
+        draw.point((ox + 16, oy + 19), fill=palette.accent)
 
-    draw.rectangle((ox + 6, oy + 2, ox + 9, oy + 5), fill=skin)
-    draw.rectangle((ox + 5, torso_top, ox + 10, torso_bottom), fill=body)
+
+def draw_agent(draw: ImageDraw.ImageDraw, ox: int, oy: int, archetype: str, palette: Palette, pose: str) -> None:
+    skin: Color = (244, 206, 176, 255)
+    skin_shadow = tint(skin, -0.1)
+    pants = tint(palette.primary, -0.52)
+    arm = tint(palette.primary, -0.06)
+    desk_base: Color = (90, 97, 112, 255)
+    desk_top = tint(desk_base, 0.2)
+    monitor_frame: Color = (31, 35, 45, 255)
+    monitor_frame_hi = tint(monitor_frame, 0.2)
+    keyboard: Color = (64, 70, 84, 255)
+    chair_hi = tint(palette.chair, 0.16)
 
     if pose == "working":
-        draw.rectangle((ox + 5, oy + 4, ox + 5, oy + 7), fill=body)
-        draw.rectangle((ox + 10, oy + 4, ox + 10, oy + 7), fill=body)
+        screen = tint(palette.accent, 0.05)
+    elif pose == "error":
+        screen = (232, 79, 66, 255)
     elif pose == "thinking":
-        draw.rectangle((ox + 4, torso_top + 1, ox + 4, torso_top + 3), fill=body)
-        draw.rectangle((ox + 11, torso_top + 1, ox + 11, torso_top + 3), fill=body)
-        draw.rectangle((ox + 10, torso_bottom + 1, ox + 13, torso_bottom + 1), fill=(198, 210, 219, 255))
+        screen = tint(palette.secondary, 0.18)
     else:
-        draw.rectangle((ox + 4, torso_top + 1, ox + 4, torso_top + 3), fill=body)
-        draw.rectangle((ox + 11, torso_top + 1, ox + 11, torso_top + 3), fill=body)
+        screen = tint(palette.secondary, -0.08)
+
+    draw.rectangle((ox + 6, oy, ox + 25, oy + 6), fill=desk_base)
+    draw.rectangle((ox + 7, oy + 1, ox + 24, oy + 2), fill=desk_top)
+    draw.rectangle((ox + 10, oy + 1, ox + 21, oy + 7), fill=monitor_frame)
+    draw.rectangle((ox + 11, oy + 2, ox + 20, oy + 6), fill=screen)
+    draw.rectangle((ox + 11, oy + 8, ox + 20, oy + 9), fill=keyboard)
 
     if pose == "working":
-        draw.rectangle((ox + 6, torso_bottom + 1, ox + 7, oy + 13), fill=dark)
-        draw.rectangle((ox + 8, torso_bottom + 1, ox + 9, oy + 13), fill=dark)
+        draw.rectangle((ox + 13, oy + 8, ox + 18, oy + 8), fill=tint(palette.accent, 0.1))
+        draw.point((ox + 12, oy + 3), fill=tint(screen, 0.22))
+        draw.point((ox + 19, oy + 3), fill=tint(screen, 0.22))
+    elif pose == "thinking":
+        bubble = (240, 244, 255, 255)
+        draw.point((ox + 23, oy + 12), fill=bubble)
+        draw.rectangle((ox + 24, oy + 10, ox + 26, oy + 12), fill=bubble)
+        draw.point((ox + 25, oy + 9), fill=bubble)
+    elif pose == "error":
+        warn = (243, 85, 73, 255)
+        draw.rectangle((ox + 23, oy + 10, ox + 25, oy + 12), fill=warn)
+        draw.point((ox + 24, oy + 11), fill=(255, 237, 219, 255))
+
+    draw.rectangle((ox + 9, oy + 18, ox + 22, oy + 30), fill=palette.chair)
+    draw.rectangle((ox + 10, oy + 15, ox + 21, oy + 20), fill=chair_hi)
+
+    draw.rectangle((ox + 12, oy + 10, ox + 19, oy + 15), fill=skin)
+    draw.rectangle((ox + 12, oy + 10, ox + 19, oy + 12), fill=palette.hair)
+    draw.point((ox + 14, oy + 13), fill=(28, 24, 22, 255))
+    draw.point((ox + 17, oy + 13), fill=(28, 24, 22, 255))
+    draw.rectangle((ox + 14, oy + 15, ox + 17, oy + 15), fill=skin_shadow)
+
+    torso_top = 16 if pose != "working" else 15
+    torso_bottom = 22
+
+    if archetype == "gemini":
+        draw.rectangle((ox + 10, oy + torso_top, ox + 15, oy + torso_bottom), fill=palette.primary)
+        draw.rectangle((ox + 16, oy + torso_top, ox + 21, oy + torso_bottom), fill=palette.secondary)
     else:
-        draw.rectangle((ox + 6, torso_bottom + 1, ox + 7, oy + 14), fill=dark)
-        draw.rectangle((ox + 8, torso_bottom + 1, ox + 9, oy + 14), fill=dark)
+        draw.rectangle((ox + 10, oy + torso_top, ox + 21, oy + torso_bottom), fill=palette.primary)
+        draw.rectangle((ox + 11, oy + torso_top + 2, ox + 20, oy + torso_top + 3), fill=palette.secondary)
 
-    draw.point((ox + 7, oy + 3), fill=(20, 20, 20, 255))
-    draw.point((ox + 8, oy + 3), fill=(20, 20, 20, 255))
+    if pose == "working":
+        draw.rectangle((ox + 8, oy + 14, ox + 11, oy + 18), fill=arm)
+        draw.rectangle((ox + 20, oy + 14, ox + 23, oy + 18), fill=arm)
+        draw.rectangle((ox + 10, oy + 13, ox + 11, oy + 14), fill=skin)
+        draw.rectangle((ox + 20, oy + 13, ox + 21, oy + 14), fill=skin)
+    elif pose == "thinking":
+        draw.rectangle((ox + 8, oy + 17, ox + 11, oy + 20), fill=arm)
+        draw.rectangle((ox + 20, oy + 14, ox + 22, oy + 18), fill=arm)
+        draw.rectangle((ox + 19, oy + 13, ox + 20, oy + 14), fill=skin)
+    elif pose == "error":
+        draw.rectangle((ox + 8, oy + 18, ox + 11, oy + 22), fill=arm)
+        draw.rectangle((ox + 20, oy + 16, ox + 22, oy + 20), fill=arm)
+        draw.rectangle((ox + 21, oy + 21, ox + 22, oy + 22), fill=skin_shadow)
+    else:
+        draw.rectangle((ox + 8, oy + 17, ox + 11, oy + 20), fill=arm)
+        draw.rectangle((ox + 20, oy + 17, ox + 23, oy + 20), fill=arm)
 
-    if pose == "error":
-        draw.point((ox + 12, oy + 2), fill=(240, 60, 55, 255))
-        draw.point((ox + 13, oy + 3), fill=(240, 60, 55, 255))
+    leg_top = 23 if pose != "working" else 22
+    draw.rectangle((ox + 12, oy + leg_top, ox + 14, oy + 28), fill=pants)
+    draw.rectangle((ox + 17, oy + leg_top, ox + 19, oy + 28), fill=pants)
+    draw.rectangle((ox + 12, oy + 29, ox + 14, oy + 30), fill=tint(pants, -0.12))
+    draw.rectangle((ox + 17, oy + 29, ox + 19, oy + 30), fill=tint(pants, -0.12))
 
-    draw.rectangle((ox + 5, oy + 6, ox + 10, torso_bottom), outline=outline)
+    draw.rectangle((ox + 10, oy + 23, ox + 21, oy + 23), fill=tint(palette.primary, -0.18))
+    draw_emblem(draw, ox, oy, archetype, palette)
+
+    draw.rectangle((ox + 10, oy + torso_top, ox + 21, oy + torso_bottom), outline=tint(palette.primary, -0.46))
+    draw.rectangle((ox + 12, oy + 10, ox + 19, oy + 15), outline=tint(palette.hair, -0.2))
+    draw.rectangle((ox + 10, oy + 1, ox + 21, oy + 7), outline=monitor_frame_hi)
 
 
 def build_agents_sheet() -> None:
@@ -77,11 +248,11 @@ def build_agents_sheet() -> None:
     frames: dict[str, dict[str, object]] = {}
 
     index = 0
-    for archetype, color in ARCHETYPES:
+    for archetype, palette in ARCHETYPES:
         for pose in POSES:
             x = (index % SPRITE_COLUMNS) * SPRITE_SIZE
             y = (index // SPRITE_COLUMNS) * SPRITE_SIZE
-            draw_agent(draw, x, y, color, pose)
+            draw_agent(draw, x, y, archetype, palette, pose)
 
             key = f"{archetype}_{pose}"
             frames[key] = {
