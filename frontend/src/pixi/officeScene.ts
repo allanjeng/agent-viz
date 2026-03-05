@@ -191,25 +191,22 @@ export class OfficeScene {
     const heightPx = OFFICE_HEIGHT_TILES * TILE_SIZE;
 
     this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundTop, 1);
-    for (let band = 0; band < 6; band += 1) {
-      const alpha = 0.07 + band * 0.04;
-      const y = Math.floor((heightPx / 6) * band);
-      this.addRect(0, y, widthPx, Math.ceil(heightPx / 6) + 2, PALETTE.backgroundBottom, alpha);
-    }
+    this.addRect(0, 0, widthPx, heightPx, PALETTE.backgroundBottom, 0.18);
+    this.addRect(0, 0, widthPx, Math.round(heightPx * 0.34), PALETTE.text, 0.04);
 
     this.drawTiledFloor();
     this.drawPerimeterWalls();
 
-    this.drawZoneFrame(1, 1, 8, 7, PALETTE.nexusBrass);
+    this.drawZoneFrame(1, 1, 8, 7, PALETTE.nexus);
     this.drawNexusCommandCenter(1, 1, 8, 7);
 
-    this.drawZoneFrame(8, 1, 8, 7, PALETTE.pivotGold);
+    this.drawZoneFrame(8, 1, 8, 7, PALETTE.pivot);
     this.drawPivotTradingStation(8, 1, 8, 7);
 
-    this.drawZoneFrame(1, 8, 8, 8, PALETTE.aegisRed);
+    this.drawZoneFrame(1, 8, 8, 8, PALETTE.aegis);
     this.drawAegisSecurityStation(1, 8, 8, 8);
 
-    this.drawZoneFrame(8, 8, 8, 8, PALETTE.researcherPaper);
+    this.drawZoneFrame(8, 8, 8, 8, PALETTE.researcher);
     this.drawResearcherLibrary(8, 8, 8, 8);
 
     this.drawZoneFrame(17, 2, 10, 13, PALETTE.contractor);
@@ -226,11 +223,10 @@ export class OfficeScene {
     this.drawAmbientDecor();
 
     const doorY = heightPx - TILE_SIZE * 2;
-    this.addRect(widthPx - 16, doorY, 16, TILE_SIZE, 0x473126, 0.9);
-    this.addRect(widthPx - 14, doorY + 4, 12, TILE_SIZE - 8, 0xd5ad83, 0.42);
+    this.addRect(widthPx - 18, doorY, 18, TILE_SIZE, PALETTE.wall, 0.88);
+    this.addRect(widthPx - 14, doorY + 5, 12, TILE_SIZE - 10, PALETTE.floorA, 0.35);
 
-    this.addRect(0, 0, widthPx, 10, 0xffd8b2, 0.07);
-    this.addRect(0, heightPx - 12, widthPx, 12, 0x1f120d, 0.22);
+    this.addRect(0, 0, widthPx, 8, PALETTE.text, 0.05);
   }
 
   private drawTiledFloor(): void {
@@ -238,57 +234,40 @@ export class OfficeScene {
       for (let x = 1; x < OFFICE_WIDTH_TILES - 1; x += 1) {
         const px = x * TILE_SIZE;
         const py = y * TILE_SIZE;
-        const seed = this.tileSeed(x, y, 11);
+        const blockX = Math.floor((x - 1) / 4);
+        const blockY = Math.floor((y - 1) / 3);
+        const tileColor = (blockX + blockY) % 2 === 0 ? PALETTE.floorA : PALETTE.floorB;
 
-        const warmTint = ((x + y) % 4 === 0)
-          ? 0xffddb8
-          : ((x * y) % 3 === 0 ? 0xf7c89d : 0xf1d1ad);
+        this.addRect(px, py, TILE_SIZE, TILE_SIZE, tileColor, 0.98);
 
-        if (!this.drawFreeCategoryTile("floor", px, py, seed, 0.98, warmTint)) {
-          const fallback = (x + y) % 2 === 0 ? PALETTE.floorA : PALETTE.floorB;
-          this.addRect(px, py, TILE_SIZE, TILE_SIZE, fallback, 0.96);
+        if ((x - 1) % 4 === 0) {
+          this.addRect(px, py, 1, TILE_SIZE, PALETTE.border, 0.1);
+        }
+
+        if ((y - 1) % 3 === 0) {
+          this.addRect(px, py, TILE_SIZE, 1, PALETTE.border, 0.08);
         }
       }
     }
   }
 
   private drawPerimeterWalls(): void {
-    for (let x = 0; x < OFFICE_WIDTH_TILES; x += 1) {
-      const topX = x * TILE_SIZE;
-      const bottomX = x * TILE_SIZE;
-      this.drawFreeCategoryTile("walls", topX, 0, this.tileSeed(x, 0, 21), 0.96, 0xffd7b5);
-      this.drawFreeCategoryTile(
-        "walls",
-        bottomX,
-        (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE,
-        this.tileSeed(x, OFFICE_HEIGHT_TILES - 1, 22),
-        0.96,
-        0xffcca1,
-      );
-    }
+    const wallColor = PALETTE.wall;
+    const trimColor = PALETTE.wallTrim;
+    const innerHeight = (OFFICE_HEIGHT_TILES - 2) * TILE_SIZE;
+    const innerWidth = (OFFICE_WIDTH_TILES - 2) * TILE_SIZE;
 
-    for (let y = 0; y < OFFICE_HEIGHT_TILES; y += 1) {
-      const leftY = y * TILE_SIZE;
-      const rightY = y * TILE_SIZE;
-      this.drawFreeCategoryTile("walls", 0, leftY, this.tileSeed(0, y, 23), 0.96, 0xffd8b8);
-      this.drawFreeCategoryTile(
-        "walls",
-        (OFFICE_WIDTH_TILES - 1) * TILE_SIZE,
-        rightY,
-        this.tileSeed(OFFICE_WIDTH_TILES - 1, y, 24),
-        0.96,
-        0xffd8b8,
-      );
-    }
+    this.addRect(0, 0, OFFICE_WIDTH_TILES * TILE_SIZE, TILE_SIZE, wallColor, 0.98);
+    this.addRect(0, (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE, OFFICE_WIDTH_TILES * TILE_SIZE, TILE_SIZE, wallColor, 0.98);
+    this.addRect(0, TILE_SIZE, TILE_SIZE, innerHeight, wallColor, 0.98);
+    this.addRect((OFFICE_WIDTH_TILES - 1) * TILE_SIZE, TILE_SIZE, TILE_SIZE, innerHeight, wallColor, 0.98);
 
-    for (let y = 1; y < OFFICE_HEIGHT_TILES - 1; y += 1) {
-      this.drawFreeCategoryTile("walls", 8 * TILE_SIZE, y * TILE_SIZE, this.tileSeed(8, y, 25), 0.5, 0xf2c59a);
-      this.drawFreeCategoryTile("walls", 16 * TILE_SIZE, y * TILE_SIZE, this.tileSeed(16, y, 26), 0.42, 0xf2c59a);
-    }
+    this.addRect(TILE_SIZE, TILE_SIZE, innerWidth, 2, trimColor, 0.24);
+    this.addRect(TILE_SIZE, (OFFICE_HEIGHT_TILES - 1) * TILE_SIZE - 2, innerWidth, 2, trimColor, 0.18);
 
-    for (let x = 1; x < 16; x += 1) {
-      this.drawFreeCategoryTile("walls", x * TILE_SIZE, 8 * TILE_SIZE, this.tileSeed(x, 8, 27), 0.45, 0xe7bc96);
-    }
+    this.addRect(8 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.3);
+    this.addRect(16 * TILE_SIZE - 1, TILE_SIZE, 2, innerHeight, trimColor, 0.28);
+    this.addRect(TILE_SIZE, 8 * TILE_SIZE - 1, 15 * TILE_SIZE, 2, trimColor, 0.26);
   }
 
   private drawZoneFrame(
@@ -303,74 +282,58 @@ export class OfficeScene {
     const width = widthTiles * TILE_SIZE;
     const height = heightTiles * TILE_SIZE;
 
-    this.addRect(x, y, width, height, 0x2a1d15, 0.24);
-    this.addRect(x, y, width, 2, accent, 0.5);
-    this.addRect(x, y + height - 2, width, 2, accent, 0.4);
-    this.addRect(x, y, 2, height, accent, 0.3);
-    this.addRect(x + width - 2, y, 2, height, accent, 0.3);
+    this.addRect(x, y, width, height, PALETTE.panelA, 0.2);
+    this.addRect(x + 1, y + 1, width - 2, height - 2, PALETTE.panelB, 0.08);
+    this.addRect(x, y, width, 1, accent, 0.65);
+    this.addRect(x, y + height - 1, width, 1, accent, 0.5);
+    this.addRect(x, y, 1, height, accent, 0.48);
+    this.addRect(x + width - 1, y, 1, height, accent, 0.48);
   }
 
   private drawNexusCommandCenter(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.drawFreeNamed("lab_rug_green", x + 20, y + 14, { alpha: 0.28, tint: 0xffc79e });
-    this.drawFreeNamed("tech_console_long", x + 22, y + 26, { alpha: 0.95, tint: 0xffc58f });
-    this.drawFreeNamed("tech_machine_lower", x + 146, y + 118, { alpha: 0.84, tint: 0xeeb07f });
-    this.drawFreeNamed("tech_chip_panel", x + 180, y + 28, { alpha: 0.9, tint: 0xffd29d });
-    this.drawFreeNamed("tech_display_left", x + 34, y + 30, { alpha: 0.9, tint: 0xffe0a8 });
+    this.drawFreeNamed("tech_console_long", x + 28, y + 72, { alpha: 0.9, tint: 0xf6ad55 });
+    this.drawFreeNamed("tech_display_left", x + 28, y + 26, { alpha: 0.9, tint: 0xf8d0a2 });
+    this.drawFreeNamed("tech_chip_panel", x + 176, y + 30, { alpha: 0.86, tint: 0xf5bc75 });
   }
 
   private drawPivotTradingStation(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.drawFreeNamed("lab_rug_plum", x + 18, y + 14, { alpha: 0.18, tint: 0xe0aa73 });
-    this.drawFreeNamed("tech_trading_board", x + 30, y + 26, { alpha: 0.96, tint: 0xf2ca8c });
-    this.drawFreeNamed("tech_chart_panel", x + 178, y + 32, { alpha: 0.92, tint: 0xf4d19b });
-    this.drawFreeNamed("tech_ticker_strip", x + 20, y + 110, { alpha: 0.9, tint: 0xe9b86f });
-    this.drawFreeNamed("tech_indicator_strip", x + 188, y + 112, { alpha: 0.86, tint: 0xf7dda8 });
+    this.drawFreeNamed("tech_trading_board", x + 30, y + 74, { alpha: 0.9, tint: 0x9bbf5f });
+    this.drawFreeNamed("tech_chart_panel", x + 178, y + 30, { alpha: 0.9, tint: 0xcadf95 });
+    this.drawFreeNamed("tech_ticker_strip", x + 34, y + 32, { alpha: 0.84, tint: 0xbecf81 });
   }
 
   private drawAegisSecurityStation(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.drawFreeNamed("lab_rug_plum", x + 14, y + 18, { alpha: 0.13, tint: 0xd39787 });
-    this.drawFreeNamed("tech_server_frame", x + 24, y + 22, { alpha: 0.95, tint: 0xeead9b });
-    this.drawFreeNamed("tech_server_top", x + 152, y + 24, { alpha: 0.9, tint: 0xea9f91 });
-    this.drawFreeNamed("tech_gate_bottom", x + 86, y + 138, { alpha: 0.88, tint: 0xd88d81 });
-    this.drawFreeNamed("lab_security_door", x + 186, y + 116, { alpha: 0.92, tint: 0xf6c0b1 });
+    this.drawFreeNamed("tech_server_frame", x + 26, y + 68, { alpha: 0.92, tint: 0xe57373 });
+    this.drawFreeNamed("tech_gate_bottom", x + 88, y + 138, { alpha: 0.86, tint: 0xd76a6a });
+    this.drawFreeNamed("lab_security_door", x + 186, y + 112, { alpha: 0.9, tint: 0xf0a0a0 });
   }
 
   private drawResearcherLibrary(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
 
-    this.drawFreeNamed("lab_rug_green", x + 18, y + 18, { alpha: 0.16, tint: 0xd8b790 });
-    this.drawFreeNamed("lab_archive_wide_a", x + 12, y + 18, { alpha: 0.96, tint: 0xf3d8b2 });
-    this.drawFreeNamed("lab_archive_wide_b", x + 12, y + 106, { alpha: 0.92, tint: 0xefcda5 });
-    this.drawFreeNamed("lab_study_lamp", x + 132, y + 42, { alpha: 0.94, tint: 0xffe3b0 });
-    this.drawFreeNamed("tech_terminal_small", x + 164, y + 60, { alpha: 0.86, tint: 0xe7c5a8 });
-    this.drawFreeNamed("lab_archive_left", x + 168, y + 118, { alpha: 0.85, tint: 0xf3d7b1 });
+    this.drawFreeNamed("lab_archive_wide_a", x + 16, y + 20, { alpha: 0.94, tint: 0xe7d9ff });
+    this.drawFreeNamed("lab_archive_wide_b", x + 16, y + 108, { alpha: 0.9, tint: 0xd8c6f8 });
+    this.drawFreeNamed("lab_study_lamp", x + 142, y + 44, { alpha: 0.92, tint: 0xffe2b9 });
   }
 
-  private drawContractorWorkstations(tileX: number, tileY: number, widthTiles: number, heightTiles: number): void {
+  private drawContractorWorkstations(tileX: number, tileY: number, _widthTiles: number, _heightTiles: number): void {
     const x = tileX * TILE_SIZE;
     const y = tileY * TILE_SIZE;
-    const width = widthTiles * TILE_SIZE;
-    const height = heightTiles * TILE_SIZE;
 
     for (let row = 0; row < 3; row += 1) {
-      const rowY = y + 30 + row * 122;
-      this.drawFreeNamed("tech_hotdesk_strip", x + 22, rowY, { alpha: 0.92, tint: 0xf0bf95 });
-      this.drawFreeNamed("tech_hotdesk_strip", x + 150, rowY, { alpha: 0.9, tint: 0xeeb989 });
-      this.drawFreeNamed("lab_partition", x + 8, rowY + 30, { alpha: 0.8, tint: 0xf2cfab });
-      this.drawFreeNamed("lab_partition_low", x + 146, rowY + 30, { alpha: 0.8, tint: 0xf2cfab });
+      const rowY = y + 34 + row * 122;
+      this.drawFreeNamed("tech_hotdesk_strip", x + 34, rowY, { alpha: 0.84, tint: 0xe2b183 });
     }
-
-    this.drawFreeNamed("tech_floor_bench", x + width - 146, y + height - 72, { alpha: 0.86, tint: 0xe8b58c });
-    this.drawFreeNamed("lab_terminal_panel", x + width - 58, y + 36, { alpha: 0.88, tint: 0xf5d3af });
   }
 
   private drawPersistentDesk(id: string, tile: TilePoint): void {
@@ -378,29 +341,25 @@ export class OfficeScene {
     const y = tile.y * TILE_SIZE;
 
     if (id === "nexus") {
-      if (this.drawFreeNamed("tech_console_left", x - 14, y - 18, { tint: 0xffcc98, alpha: 0.95 })) {
-        this.drawFreeNamed("tech_display_mid", x + 34, y - 26, { tint: 0xffd6a5, alpha: 0.9 });
+      if (this.drawFreeNamed("tech_console_left", x - 14, y - 18, { tint: 0xffca93, alpha: 0.94 })) {
         return;
       }
     }
 
     if (id === "pivot") {
-      if (this.drawFreeNamed("tech_trading_board", x - 20, y - 16, { tint: 0xf1c384, alpha: 0.95 })) {
-        this.drawFreeNamed("tech_ticker_strip", x - 20, y + 12, { tint: 0xe8b46f, alpha: 0.9 });
+      if (this.drawFreeNamed("tech_trading_board", x - 20, y - 16, { tint: 0xb3c77a, alpha: 0.93 })) {
         return;
       }
     }
 
     if (id === "aegis") {
-      if (this.drawFreeNamed("tech_server_top", x - 14, y - 20, { tint: 0xe8a195, alpha: 0.94 })) {
-        this.drawFreeNamed("tech_gate_left", x + 54, y - 20, { tint: 0xdd8f83, alpha: 0.88 });
+      if (this.drawFreeNamed("tech_server_top", x - 14, y - 20, { tint: 0xea8a8a, alpha: 0.93 })) {
         return;
       }
     }
 
     if (id === "researcher") {
-      if (this.drawFreeNamed("lab_archive_right", x - 16, y - 24, { tint: 0xf1d2ac, alpha: 0.95 })) {
-        this.drawFreeNamed("lab_study_lamp", x + 26, y - 26, { tint: 0xffdfaf, alpha: 0.92 });
+      if (this.drawFreeNamed("lab_archive_right", x - 16, y - 24, { tint: 0xe1d0ff, alpha: 0.94 })) {
         return;
       }
     }
@@ -425,41 +384,20 @@ export class OfficeScene {
     const x = tile.x * TILE_SIZE + 2;
     const y = tile.y * TILE_SIZE + 8;
 
-    this.addRect(x - 2, y + 12, 32, 4, 0x140d09, 0.5);
+    this.addRect(x - 2, y + 12, 32, 4, 0x3c271c, 0.35);
     this.addRect(x, y, 28, 14, deskColor);
     this.addRect(x, y, 28, 3, accentColor, 0.9);
-    this.addRect(x + 2, y + 14, 4, 7, 0x2b1c15);
-    this.addRect(x + 22, y + 14, 4, 7, 0x2b1c15);
-    this.addRect(x + 15, y - 8, 11, 7, 0x2d1f18);
-    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.38);
-    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.62);
+    this.addRect(x + 2, y + 14, 4, 7, 0x5b4333);
+    this.addRect(x + 22, y + 14, 4, 7, 0x5b4333);
+    this.addRect(x + 15, y - 8, 11, 7, 0x594133);
+    this.addRect(x + 16, y - 7, 9, 5, accentColor, 0.44);
+    this.addRect(x + 4, y + 5, 8, 4, PALETTE.border, 0.56);
   }
 
   private drawAmbientDecor(): void {
-    this.drawFreeNamed("lab_hanging_lamp", 6 * TILE_SIZE, 2, { alpha: 0.86, tint: 0xffe0b0 });
-    this.drawFreeNamed("lab_hanging_lamp", 13 * TILE_SIZE, 2, { alpha: 0.8, tint: 0xffd6a5 });
-    this.drawFreeNamed("lab_bike_decor", 2 * TILE_SIZE, 9 * TILE_SIZE + 6, { alpha: 0.75, tint: 0xe8ba92 });
-    this.drawFreeNamed("tech_caution_left", 17 * TILE_SIZE + 12, 4 * TILE_SIZE, { alpha: 0.35, tint: 0xd79a68 });
-    this.drawFreeNamed("tech_caution_right", 26 * TILE_SIZE - 20, 4 * TILE_SIZE, { alpha: 0.35, tint: 0xd79a68 });
-
-    const randomDecor: Array<{ category: FreeFurnitureCategory; x: number; y: number; salt: number; tint: number }> = [
-      { category: "decor", x: 3, y: 13, salt: 31, tint: 0xdca87b },
-      { category: "decor", x: 14, y: 13, salt: 32, tint: 0xdca87b },
-      { category: "lamps", x: 11, y: 9, salt: 33, tint: 0xffdcac },
-      { category: "shelves", x: 9, y: 10, salt: 34, tint: 0xf0cfa8 },
-      { category: "hotdesk", x: 21, y: 14, salt: 35, tint: 0xf0be92 },
-    ];
-
-    for (const item of randomDecor) {
-      this.drawFreeCategoryTile(
-        item.category,
-        item.x * TILE_SIZE,
-        item.y * TILE_SIZE,
-        this.tileSeed(item.x, item.y, item.salt),
-        0.78,
-        item.tint,
-      );
-    }
+    this.drawFreeNamed("lab_hanging_lamp", 6 * TILE_SIZE, 2, { alpha: 0.78, tint: 0xffddb0 });
+    this.drawFreeNamed("lab_hanging_lamp", 13 * TILE_SIZE, 2, { alpha: 0.78, tint: 0xffddb0 });
+    this.drawFreeNamed("lab_hanging_lamp", 22 * TILE_SIZE, 2, { alpha: 0.72, tint: 0xffd39c });
   }
 
   private addRect(
