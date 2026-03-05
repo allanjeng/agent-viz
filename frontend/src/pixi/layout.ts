@@ -1,6 +1,6 @@
 export const TILE_SIZE = 32;
-export const OFFICE_WIDTH_TILES = 40;
-export const OFFICE_HEIGHT_TILES = 24;
+export const OFFICE_WIDTH_TILES = 44;
+export const OFFICE_HEIGHT_TILES = 26;
 
 export type TilePoint = {
   x: number;
@@ -8,24 +8,26 @@ export type TilePoint = {
 };
 
 export const PERSISTENT_DESKS: Record<string, TilePoint> = {
-  nexus: { x: 6, y: 7 },
-  pivot: { x: 18, y: 7 },
-  aegis: { x: 6, y: 17 },
-  researcher: { x: 18, y: 17 },
+  nexus: { x: 7, y: 7 },
+  pivot: { x: 20, y: 7 },
+  aegis: { x: 7, y: 18 },
+  researcher: { x: 20, y: 18 },
 };
 
 export const CONTRACTOR_DESKS: TilePoint[] = [
-  { x: 29, y: 6 },
-  { x: 34, y: 6 },
-  { x: 29, y: 11 },
-  { x: 34, y: 11 },
-  { x: 29, y: 16 },
-  { x: 34, y: 16 },
+  { x: 31, y: 6 },
+  { x: 36, y: 6 },
+  { x: 31, y: 10 },
+  { x: 36, y: 10 },
+  { x: 31, y: 14 },
+  { x: 36, y: 14 },
+  { x: 31, y: 18 },
+  { x: 36, y: 18 },
 ];
 
 export const ENTRY_POINT = {
-  x: OFFICE_WIDTH_TILES * TILE_SIZE - TILE_SIZE * 0.8,
-  y: OFFICE_HEIGHT_TILES * TILE_SIZE - TILE_SIZE * 1.1,
+  x: OFFICE_WIDTH_TILES * TILE_SIZE - TILE_SIZE * 0.9,
+  y: (OFFICE_HEIGHT_TILES - 4.8) * TILE_SIZE,
 };
 
 export function deskToAgentPosition(tile: TilePoint): { x: number; y: number } {
