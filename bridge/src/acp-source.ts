@@ -18,6 +18,8 @@ interface AcpSession {
   cumulative_token_usage?: Record<string, unknown>;
 }
 
+const CLOSED_SESSION_GRACE_MS = 30_000;
+
 function detectContractorType(agentCommand: string): string {
   const cmd = agentCommand.toLowerCase();
   if (cmd.includes("codex")) return "Codex";
@@ -37,10 +39,21 @@ function contractorDisplayName(type: string, sessionName: string): string {
   return `${type} (${short})`;
 }
 
+function deriveSessionStatus(lastUsedAt: string): "idle" | "thinking" | "working" {
+  const parsed = new Date(lastUsedAt).getTime();
+  const lastUsed = Number.isFinite(parsed) ? parsed : Date.now();
+  const age = Date.now() - lastUsed;
+
+  if (age > 5 * 60_000) return "idle";
+  if (age > 30_000) return "thinking";
+  return "working";
+}
+
 export class AcpSource {
   private watcher: FSWatcher | null = null;
   // Track which acpx_record_id maps to which bridge agent id
   private activeContractors = new Map<string, string>();
+  private closeTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly store: BridgeStateStore,
@@ -70,6 +83,10 @@ export class AcpSource {
       void this.watcher.close();
       this.watcher = null;
     }
+    for (const timer of this.closeTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.closeTimers.clear();
     this.store.pushEvent("ACP session watcher stopped.");
   }
 
@@ -96,27 +113,8 @@ export class AcpSource {
       const recordId = session.acpx_record_id;
       const type = detectContractorType(session.agent_command);
       const agentId = `acp-${recordId}`;
-
-      if (session.closed) {
-        // Remove if we were tracking it
-        if (this.activeContractors.has(recordId)) {
-          const name = contractorDisplayName(type, session.name);
-          this.store.removeAgent(agentId, `${name} session completed.`);
-          this.activeContractors.delete(recordId);
-        }
-        return;
-      }
-
-      // Active session
       const name = contractorDisplayName(type, session.name);
-      const now = Date.now();
-      const lastUsed = new Date(session.last_used_at).getTime();
-      const age = now - lastUsed;
-
-      let status: "idle" | "thinking" | "working" = "working";
-      if (age > 5 * 60_000) status = "idle";
-      else if (age > 30_000) status = "thinking";
-
+      const status = deriveSessionStatus(session.last_used_at);
       const agent: AgentState = {
         id: agentId,
         name,
@@ -127,6 +125,32 @@ export class AcpSource {
         lastActivity: session.last_used_at,
       };
 
+      if (session.closed) {
+        const closedAt = session.closed_at
+          ? new Date(session.closed_at).getTime()
+          : Date.now();
+        const effectiveClosedAt = Number.isFinite(closedAt) ? closedAt : Date.now();
+        const remainingMs = CLOSED_SESSION_GRACE_MS - (Date.now() - effectiveClosedAt);
+
+        if (remainingMs <= 0) {
+          this.removeContractor(recordId, agentId, name);
+          return;
+        }
+
+        // Keep recently-closed sessions visible briefly so despawn animations can run.
+        const isNew = !this.activeContractors.has(recordId);
+        this.activeContractors.set(recordId, agentId);
+        this.store.upsertAgent(
+          agent,
+          isNew ? `${name} spawned as contractor.` : undefined,
+        );
+        this.scheduleCloseRemoval(recordId, agentId, name, remainingMs);
+        return;
+      }
+
+      this.clearCloseTimer(recordId);
+
+      // Active session
       const isNew = !this.activeContractors.has(recordId);
       this.activeContractors.set(recordId, agentId);
       this.store.upsertAgent(
@@ -143,10 +167,39 @@ export class AcpSource {
     const basename = path.basename(filePath, ".json");
     for (const [recordId, agentId] of this.activeContractors) {
       if (recordId === basename) {
+        this.clearCloseTimer(recordId);
         this.store.removeAgent(agentId, `ACP session file removed.`);
         this.activeContractors.delete(recordId);
         return;
       }
     }
+  }
+
+  private scheduleCloseRemoval(
+    recordId: string,
+    agentId: string,
+    name: string,
+    remainingMs: number,
+  ): void {
+    this.clearCloseTimer(recordId);
+    const timer = setTimeout(() => {
+      this.closeTimers.delete(recordId);
+      this.removeContractor(recordId, agentId, name);
+    }, Math.max(0, remainingMs));
+    this.closeTimers.set(recordId, timer);
+  }
+
+  private clearCloseTimer(recordId: string): void {
+    const existing = this.closeTimers.get(recordId);
+    if (!existing) return;
+    clearTimeout(existing);
+    this.closeTimers.delete(recordId);
+  }
+
+  private removeContractor(recordId: string, agentId: string, name: string): void {
+    this.clearCloseTimer(recordId);
+    if (!this.activeContractors.has(recordId)) return;
+    this.store.removeAgent(agentId, `${name} session completed.`);
+    this.activeContractors.delete(recordId);
   }
 }

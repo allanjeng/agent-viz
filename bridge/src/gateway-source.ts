@@ -32,6 +32,21 @@ const AGENT_MAP: Record<string, string> = {
 };
 
 const PERSISTENT_IDS = new Set(Object.keys(AGENT_MAP));
+const CONTRACTOR_KIND_MAP = {
+  codex: "Codex",
+  claude: "Claude",
+  gemini: "Gemini",
+  opencode: "OpenCode",
+} as const;
+type ContractorKind = keyof typeof CONTRACTOR_KIND_MAP;
+
+interface ContractorSessionGroup {
+  id: string;
+  name: string;
+  kind: ContractorKind;
+  parentId: string;
+  sessions: GatewaySession[];
+}
 
 function extractAgentId(sessionKey: string): string | null {
   // "agent:main:discord:channel:123" → "main"
@@ -69,9 +84,38 @@ function deriveStatus(sessions: GatewaySession[]): AgentStatus {
   return "idle";
 }
 
+function parseContractorSessionKey(sessionKey: string): {
+  id: string;
+  name: string;
+  kind: ContractorKind;
+  parentId: string;
+} | null {
+  const match = sessionKey.match(/^agent:(codex|claude|gemini|opencode):acp:(.+)$/);
+  if (!match) return null;
+
+  const kind = match[1] as ContractorKind;
+  const tail = match[2];
+  const uuid = tail.split(":").at(-1) ?? tail;
+  const short = uuid.slice(0, 8);
+  const title = CONTRACTOR_KIND_MAP[kind];
+
+  // Some keys may embed the spawning persistent ID; default to main.
+  const parentMatch = sessionKey.match(/:(main|pivot|aegis|researcher)(?::|$)/);
+  const parentId = parentMatch?.[1] ?? "main";
+
+  return {
+    id: sessionKey,
+    name: `${title} (${short})`,
+    kind,
+    parentId,
+  };
+}
+
 export class GatewaySource {
   private timer: NodeJS.Timeout | null = null;
   private lastAgentStatus = new Map<string, AgentStatus>();
+  private activeContractorIds = new Set<string>();
+  private contractorNames = new Map<string, string>();
 
   constructor(
     private readonly store: BridgeStateStore,
@@ -168,6 +212,24 @@ export class GatewaySource {
       }
     }
 
+    // Group ACP contractor sessions by child session key
+    const contractorGroups = new Map<string, ContractorSessionGroup>();
+    for (const session of sessions) {
+      const contractor = parseContractorSessionKey(session.key);
+      if (!contractor) continue;
+
+      const existing = contractorGroups.get(contractor.id);
+      if (existing) {
+        existing.sessions.push(session);
+        continue;
+      }
+
+      contractorGroups.set(contractor.id, {
+        ...contractor,
+        sessions: [session],
+      });
+    }
+
     // Upsert persistent agents
     for (const [agentId, name] of Object.entries(AGENT_MAP)) {
       const sessionsForAgent = agentSessions.get(agentId) ?? [];
@@ -208,5 +270,58 @@ export class GatewaySource {
 
       this.store.upsertAgent(agent, eventMsg);
     }
+
+    // Upsert contractors from gateway API and remove missing ones
+    const seenContractorIds = new Set<string>();
+    for (const contractor of contractorGroups.values()) {
+      const status = deriveStatus(contractor.sessions);
+      const totalTokens = contractor.sessions.reduce(
+        (sum, session) => sum + (session.totalTokens ?? 0),
+        0,
+      );
+      const mostRecent = contractor.sessions.sort(
+        (a, b) => b.updatedAt - a.updatedAt,
+      )[0];
+      const parentId = PERSISTENT_IDS.has(contractor.parentId)
+        ? contractor.parentId
+        : "main";
+
+      const agent: AgentState = {
+        id: contractor.id,
+        name: contractor.name,
+        type: "contractor",
+        status,
+        connections: [parentId],
+        model: mostRecent?.model ?? contractor.kind,
+        totalTokens,
+        sessionCount: contractor.sessions.length,
+        lastActivity: mostRecent
+          ? new Date(mostRecent.updatedAt).toISOString()
+          : undefined,
+      };
+
+      const previousStatus = this.lastAgentStatus.get(contractor.id);
+      const isNew = !this.activeContractorIds.has(contractor.id);
+      const eventMsg = isNew
+        ? `${contractor.name} spawned as contractor.`
+        : previousStatus && previousStatus !== status
+          ? `${contractor.name} status: ${previousStatus} → ${status}`
+          : undefined;
+
+      this.lastAgentStatus.set(contractor.id, status);
+      this.contractorNames.set(contractor.id, contractor.name);
+      this.store.upsertAgent(agent, eventMsg);
+      seenContractorIds.add(contractor.id);
+    }
+
+    for (const previousId of this.activeContractorIds) {
+      if (seenContractorIds.has(previousId)) continue;
+      const name = this.contractorNames.get(previousId) ?? previousId;
+      this.store.removeAgent(previousId, `${name} session completed.`);
+      this.lastAgentStatus.delete(previousId);
+      this.contractorNames.delete(previousId);
+    }
+
+    this.activeContractorIds = seenContractorIds;
   }
 }
