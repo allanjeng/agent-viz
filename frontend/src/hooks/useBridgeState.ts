@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import { BridgeStateMessage, DashboardSnapshot } from "../types";
 
-const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL ?? "ws://localhost:3002";
+// Default: connect to bridge on same host the page was served from
+const BRIDGE_URL =
+  import.meta.env.VITE_BRIDGE_URL ??
+  `ws://${window.location.hostname}:3002`;
 const RECONNECT_DELAY_MS = 2000;
 
 const EMPTY_SNAPSHOT: DashboardSnapshot = {

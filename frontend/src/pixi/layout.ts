@@ -8,10 +8,10 @@ export type TilePoint = {
 };
 
 export const PERSISTENT_DESKS: Record<string, TilePoint> = {
-  nexus: { x: 4, y: 4 },
-  pivot: { x: 10, y: 4 },
-  aegis: { x: 4, y: 10 },
-  researcher: { x: 10, y: 10 },
+  nexus: { x: 4, y: 5 },
+  pivot: { x: 10, y: 5 },
+  aegis: { x: 4, y: 11 },
+  researcher: { x: 10, y: 11 },
 };
 
 export const CONTRACTOR_DESKS: TilePoint[] = [
