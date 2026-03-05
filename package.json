@@ -1,0 +1,18 @@
+{
+  "name": "agent-viz",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "bridge",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n bridge,frontend -c cyan,green \"npm run dev --workspace bridge\" \"npm run dev --workspace frontend\"",
+    "dev:bridge": "npm run dev --workspace bridge",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace bridge && npm run build --workspace frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
